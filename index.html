@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Central - Gestión Financiera</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f4f7fa; }
+    .navbar-brand { font-weight: 700; letter-spacing: 0.3px; }
+    .card-total {
+      background: linear-gradient(135deg, #1a73e8, #0d47a1);
+      color: white;
+      border-radius: 12px;
+    }
+    .cuenta-item {
+      border-radius: 10px;
+      border: 1px solid #e3e8ee;
+      transition: transform 0.1s ease;
+    }
+    .cuenta-item:hover { transform: translateY(-1px); }
+  </style>
+</head>
+<body>
+
+  <!-- Barra de Navegación -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
+    <div class="container">
+      <a class="navbar-brand" href="#">Finanzas Personales</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="menuPrincipal">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link active" href="#saldos">Saldos</a></li>
+          <li class="nav-item"><a class="nav-link disabled" href="#">Nueva Transacción</a></li>
+          <li class="nav-item"><a class="nav-link disabled" href="#">Historial</a></li>
+          <li class="nav-item"><a class="nav-link disabled" href="#">Gastos</a></li>
+          <li class="nav-item"><a class="nav-link disabled" href="#">Configuración</a></li>
+        </ul>
+        <div class="d-flex align-items-center gap-3">
+          <span id="usuarioEmail" class="text-white-50 small"></span>
+          <button id="btnSalir" class="btn btn-outline-light btn-sm">Salir</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Contenedor Principal -->
+  <main class="container pb-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+      <h5 class="fw-bold text-dark mb-0">Resumen de Saldos</h5>
+      <div class="d-flex align-items-center gap-2">
+        <label for="fechaCorte" class="small text-muted mb-0">Corte:</label>
+        <input type="date" id="fechaCorte" class="form-control form-control-sm" style="width: 155px;">
+        <button id="btnConsultarSaldos" class="btn btn-primary btn-sm">Actualizar</button>
+      </div>
+    </div>
+
+    <!-- Tarjeta Patrimonio Total COP -->
+    <div class="card card-total p-4 mb-4 shadow-sm text-center">
+      <div class="small text-uppercase opacity-75">Patrimonio Neto Consolidado (COP)</div>
+      <h2 id="totalConsolidado" class="fw-bold mb-0 mt-1">$ 0</h2>
+    </div>
+
+    <!-- Lista de Cuentas -->
+    <div id="contenedorCuentas" class="d-flex flex-column gap-2">
+      <div class="text-center text-muted py-4">Cargando saldos desde Supabase...</div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module">
+    import { verificarSesion, cerrarSesion } from './js/auth.js';
+    import { obtenerResumenSaldosWeb } from './js/saldos.js';
+
+    const session = await verificarSesion();
+    if (!session) throw new Error('Sin sesión');
+
+    document.getElementById('usuarioEmail').textContent = session.user.email;
+    document.getElementById('btnSalir').addEventListener('click', cerrarSesion);
+
+    const inputFecha = document.getElementById('fechaCorte');
+    inputFecha.value = new Date().toISOString().split('T')[0];
+
+    const fmtCOP = new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0
+    });
+
+    function formatearMoneda(valor, moneda) {
+      if (moneda === 'COP') return fmtCOP.format(valor);
+      return `${moneda} ${valor.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    async function cargarSaldos() {
+      const contenedor = document.getElementById('contenedorCuentas');
+      contenedor.innerHTML = '<div class="text-center text-muted py-4">Calculando saldos...</div>';
+
+      try {
+        const cuentas = await obtenerResumenSaldosWeb(inputFecha.value);
+        let totalCOP = 0;
+
+        contenedor.innerHTML = cuentas.map(c => {
+          totalCOP += c.saldoCOP;
+          const colorMonto = c.saldoOriginal < 0 ? 'text-danger' : 'text-success';
+          const subCOP = c.moneda !== 'COP'
+            ? `<div class="text-muted small">≈ ${fmtCOP.format(c.saldoCOP)}</div>`
+            : '';
+
+          return `
+            <div class="card cuenta-item bg-white px-3 py-2 shadow-sm">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-bold text-dark">${c.nombre}</div>
+                  <div class="text-muted small">${c.institucion || '[Sin Institución]'} | ${c.moneda}</div>
+                </div>
+                <div class="text-end">
+                  <div class="fw-bold ${colorMonto}">${formatearMoneda(c.saldoOriginal, c.moneda)}</div>
+                  ${subCOP}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        document.getElementById('totalConsolidado').textContent = fmtCOP.format(totalCOP);
+      } catch (err) {
+        console.error(err);
+        contenedor.innerHTML = `<div class="alert alert-danger">Error al cargar saldos: ${err.message}</div>`;
+      }
+    }
+
+    document.getElementById('btnConsultarSaldos').addEventListener('click', cargarSaldos);
+    cargarSaldos();
+  </script>
+</body>
+</html>

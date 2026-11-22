@@ -1,666 +1,1143 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Central - Gestión Financiera</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { background-color: #f4f7fa; }
-    .navbar-brand { font-weight: 700; letter-spacing: 0.3px; }
-    .card-total {
-      background: linear-gradient(135deg, #1a73e8, #0d47a1);
-      color: white;
-      border-radius: 12px;
-    }
-    .cuenta-item {
-      border-radius: 10px;
-      border: 1px solid #e3e8ee;
-      transition: transform 0.1s ease;
-    }
-    .cuenta-item:hover { transform: translateY(-1px); }
-    .form-card { max-width: 720px; margin: auto; border-radius: 12px; border: none; }
-    .partida-card { border-left: 6px solid #dc3545; border-radius: 8px; position: relative; }
-    .partida-card.ingreso { border-left-color: #198754; }
-    .partida-card.transf { border-left-color: #0d6efd; }
-    .btn-del-partida {
-      position: absolute; top: -10px; right: -10px;
-      width: 28px; height: 28px; border-radius: 50%; padding: 0; line-height: 1;
-    }
-    .hist-card {
-      border-radius: 10px;
-      border: 1px solid #dadce0;
-      transition: background-color 0.15s ease;
-    }
-    .fila-conciliada {
-      background-color: #e8f5e9 !important;
-      border-color: #81c784 !important;
-    }
-    .panel-conc-sticky {
-      position: sticky;
-      top: 10px;
-      z-index: 100;
-      border: 2px solid #1a73e8;
-      border-radius: 12px;
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Barra de Navegación -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
-    <div class="container">
-      <a class="navbar-brand" href="#" data-vista="saldos">Finanzas Personales</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="menuPrincipal">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item"><a class="nav-link active" href="#" data-vista="saldos">Saldos</a></li>
-          <li class="nav-item"><a class="nav-link" href="#" data-vista="registrar">Registrar Movimiento</a></li>
-          <li class="nav-item"><a class="nav-link" href="#" data-vista="historial">Historial</a></li>
-          <li class="nav-item"><a class="nav-link disabled" href="#">Gastos</a></li>
-          <li class="nav-item"><a class="nav-link" href="#" data-vista="configuracion">Configuración</a></li>
-        </ul>
-        <div class="d-flex align-items-center gap-3">
-          <span id="usuarioEmail" class="text-white-50 small"></span>
-          <button id="btnSalir" class="btn btn-outline-light btn-sm">Salir</button>
-        </div>
-      </div>
-    </div>
-  </nav>
-
-  <main class="container pb-5">
-
-    <!-- =================================================================== -->
-    <!-- VISTA 1: RESUMEN DE SALDOS                                          -->
-    <!-- =================================================================== -->
-    <section id="vista-saldos">
-      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-        <h5 class="fw-bold text-dark mb-0">Resumen de Saldos</h5>
-        <div class="d-flex align-items-center gap-2">
-          <label for="fechaCorte" class="small text-muted mb-0">Corte:</label>
-          <input type="date" id="fechaCorte" class="form-control form-control-sm" style="width: 155px;">
-          <button id="btnConsultarSaldos" class="btn btn-primary btn-sm">Actualizar</button>
-        </div>
-      </div>
-
-      <div class="card card-total p-4 mb-4 shadow-sm text-center">
-        <div class="small text-uppercase opacity-75">Patrimonio Neto Consolidado (COP)</div>
-        <h2 id="totalConsolidado" class="fw-bold mb-0 mt-1">$ 0</h2>
-      </div>
-
-      <div id="contenedorCuentas" class="d-flex flex-column gap-2">
-        <div class="text-center text-muted py-4">Cargando saldos desde Supabase...</div>
-      </div>
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- VISTA 2: REGISTRAR / EDITAR MOVIMIENTO                              -->
-    <!-- =================================================================== -->
-    <section id="vista-registrar" class="d-none">
-      <div class="card form-card shadow-sm p-4 bg-white">
-
-        <!-- Banner Modo Edición -->
-        <div id="bannerEdicion" class="alert alert-warning d-none d-flex justify-content-between align-items-center">
-          <span id="textoEdicion" class="fw-bold">✏️ Editando transacción</span>
-          <button type="button" id="btnCancelarEdicion" class="btn btn-sm btn-outline-dark">Cancelar Edición</button>
-        </div>
-
-        <!-- Selector de Tipo de Formulario -->
-        <ul class="nav nav-pills nav-fill mb-4 bg-light p-1 rounded" id="tabsRegistro">
-          <li class="nav-item">
-            <button class="nav-link active fw-semibold" data-subvista="simple" type="button">📝 Transacción</button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link fw-semibold" data-subvista="transferencia" type="button">🔄 Transferencia</button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link fw-semibold" data-subvista="compuesto" type="button">📊 Desglose</button>
-          </li>
-        </ul>
-
-        <div id="alertaRegistro" class="alert d-none" role="alert"></div>
-
-        <!-- SUBVISTA A: TRANSACCIÓN SIMPLE (SERIE 1) -->
-        <form id="formSimple">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label small fw-bold">Fecha</label>
-              <input type="date" id="txFecha" class="form-control" required>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label small fw-bold">Tipo de Movimiento</label>
-              <select id="txTipo" class="form-select" required>
-                <option value="Gasto" selected>📉 Gasto (-)</option>
-                <option value="Ingreso">📈 Ingreso (+)</option>
-              </select>
-            </div>
-
-            <div class="col-12">
-              <label class="form-label small fw-bold">Beneficiario</label>
-              <select id="txBeneficiario" class="form-select" required></select>
-            </div>
-
-            <div id="boxSugerencias" class="col-12 d-none">
-              <div class="p-2 rounded bg-primary-subtle border border-primary-subtle">
-                <div class="small fw-bold text-primary mb-1">Sugerencias recientes (clic para aplicar):</div>
-                <div id="listaSugerencias" class="d-flex flex-column gap-1"></div>
-              </div>
-            </div>
-
-            <div id="boxNuevoBen" class="col-12 d-none">
-              <label class="form-label small fw-bold text-primary">Nombre del Nuevo Beneficiario</label>
-              <input type="text" id="txNuevoBen" class="form-control" placeholder="Escribe el nombre...">
-            </div>
-
-            <div class="col-md-7">
-              <label class="form-label small fw-bold">Cuenta</label>
-              <select id="txCuenta" class="form-select" required></select>
-            </div>
-            <div class="col-md-5">
-              <label class="form-label small fw-bold">Monto</label>
-              <div class="input-group">
-                <span id="txMonedaBadge" class="input-group-text fw-bold">COP</span>
-                <input type="number" id="txMonto" class="form-control" step="0.01" placeholder="0.00" required>
-              </div>
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label small fw-bold">Categoría</label>
-              <select id="txCategoria" class="form-select" required></select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label small fw-bold">Subcategoría</label>
-              <select id="txSubcategoria" class="form-select"></select>
-            </div>
-
-            <div id="boxNuevaCat" class="col-md-6 d-none">
-              <label class="form-label small fw-bold text-primary">Nueva Categoría</label>
-              <input type="text" id="txNuevaCat" class="form-control" placeholder="Ej: Mascotas">
-            </div>
-            <div id="boxNuevaSub" class="col-md-6 d-none">
-              <label class="form-label small fw-bold text-primary">Nueva Subcategoría</label>
-              <input type="text" id="txNuevaSub" class="form-control" placeholder="Ej: Veterinario">
-            </div>
-
-            <div class="col-12">
-              <label class="form-label small fw-bold">Memorando</label>
-              <input type="text" id="txMemo" class="form-control" placeholder="Nota opcional...">
-            </div>
-
-            <div class="col-12 mt-4">
-              <button type="submit" id="btnGuardarSimple" class="btn btn-primary w-100 fw-bold py-2">
-                Guardar Transacción
-              </button>
-            </div>
-          </div>
-        </form>
-
-        <!-- SUBVISTA B: TRANSFERENCIA (SERIE 2) -->
-        <form id="formTransferencia" class="d-none">
-          <div class="row g-3">
-            <div class="col-12">
-              <label class="form-label small fw-bold">Fecha</label>
-              <input type="date" id="trFecha" class="form-control" required>
-            </div>
-
-            <div class="col-md-7">
-              <label class="form-label small fw-bold">Cuenta Origen</label>
-              <select id="trOrigen" class="form-select" required></select>
-            </div>
-            <div class="col-md-5">
-              <label id="lblMontoOrigen" class="form-label small fw-bold">Monto a Retirar</label>
-              <input type="number" id="trMontoOrigen" class="form-control" step="0.01" placeholder="0.00" required>
-            </div>
-
-            <div class="col-md-7">
-              <label class="form-label small fw-bold">Cuenta Destino</label>
-              <select id="trDestino" class="form-select" required></select>
-            </div>
-            <div id="boxMontoDestino" class="col-md-5 d-none">
-              <label id="lblMontoDestino" class="form-label small fw-bold text-primary">Monto a Recibir</label>
-              <input type="number" id="trMontoDestino" class="form-control" step="0.01" placeholder="0.00">
-            </div>
-
-            <div class="col-12">
-              <label class="form-label small fw-bold">Nota / Comentario</label>
-              <input type="text" id="trNota" class="form-control" placeholder="Nota opcional...">
-            </div>
-
-            <div class="col-12 mt-4">
-              <button type="submit" id="btnGuardarTr" class="btn btn-primary w-100 fw-bold py-2">
-                Registrar Transferencia
-              </button>
-            </div>
-          </div>
-        </form>
-
-        <!-- SUBVISTA C: ASIENTO COMPUESTO / DESGLOSE (SERIE 3) -->
-        <div id="formCompuesto" class="d-none">
-          <div class="p-3 mb-3 rounded bg-primary-subtle border border-primary">
-            <label class="form-label small fw-bold text-primary">📂 Plantillas Guardadas</label>
-            <div class="input-group input-group-sm mb-2">
-              <select id="selPlantillas" class="form-select">
-                <option value="">-- Mis Plantillas --</option>
-              </select>
-              <button type="button" id="btnCargarPlantilla" class="btn btn-primary">Cargar</button>
-              <button type="button" id="btnBorrarPlantilla" class="btn btn-danger">🗑️</button>
-            </div>
-            <div class="input-group input-group-sm">
-              <input type="text" id="txtNombrePlantilla" class="form-control" placeholder="Nombre para guardar esta estructura...">
-              <button type="button" id="btnGuardarPlantilla" class="btn btn-outline-primary bg-white">Guardar Plantilla</button>
-            </div>
-          </div>
-
-          <div class="p-3 mb-3 rounded border bg-light">
-            <div class="row g-2">
-              <div class="col-md-6">
-                <label class="form-label small fw-bold">Fecha</label>
-                <input type="date" id="cmpFecha" class="form-control form-control-sm">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label small fw-bold">Tipo Asiento Principal</label>
-                <select id="cmpTipo" class="form-select form-select-sm">
-                  <option value="GASTO">📉 Egreso / Gasto</option>
-                  <option value="INGRESO">💰 Ingreso</option>
-                </select>
-              </div>
-              <div class="col-12">
-                <label class="form-label small fw-bold">Beneficiario Principal</label>
-                <select id="cmpBen" class="form-select form-select-sm"></select>
-              </div>
-              <div class="col-md-8">
-                <label class="form-label small fw-bold">Cuenta Origen / Fuente</label>
-                <select id="cmpCuenta" class="form-select form-select-sm"></select>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label small fw-bold">Moneda</label>
-                <input type="text" id="cmpMoneda" class="form-control form-control-sm" readonly>
-              </div>
-              <div class="col-12">
-                <label class="form-label small fw-bold">Monto Total (Referencia)</label>
-                <input type="number" id="cmpMontoRef" class="form-control form-control-sm" step="0.01" placeholder="Ej: -800000 o 800000">
-              </div>
-            </div>
-          </div>
-
-          <div id="contenedorPartidas" class="d-flex flex-column gap-3 mb-3"></div>
-
-          <button type="button" id="btnAddPartida" class="btn btn-success btn-sm w-100 fw-bold mb-3">
-            + Añadir Partida Manual
-          </button>
-
-          <div id="boxCuadre" class="alert alert-danger text-end fw-bold py-2 mb-3">
-            Diferencia: $0.00
-          </div>
-
-          <button type="button" id="btnGuardarCompuesto" class="btn btn-primary w-100 fw-bold py-2" disabled>
-            Guardar Asiento Compuesto
-          </button>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- VISTA 3: HISTORIAL Y MODO CONCILIACIÓN                              -->
-    <!-- =================================================================== -->
-    <section id="vista-historial" class="d-none">
-      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-        <h5 class="fw-bold text-dark mb-0">Historial y Conciliación</h5>
-        <div class="form-check form-switch bg-white px-3 py-2 rounded border shadow-sm">
-          <input class="form-check-input" type="checkbox" id="chkModoConciliacion">
-          <label class="form-check-label fw-bold text-primary" for="chkModoConciliacion">
-            🔍 Modo Conciliación
-          </label>
-        </div>
-      </div>
-
-      <!-- Filtros -->
-      <div class="card p-3 mb-3 shadow-sm border-0">
-        <div class="row g-2">
-          <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted">Desde</label>
-            <input type="date" id="histDesde" class="form-control form-control-sm">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted">Hasta</label>
-            <input type="date" id="histHasta" class="form-control form-control-sm">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-bold text-muted">Cuenta</label>
-            <select id="histCuenta" class="form-select form-select-sm"></select>
-          </div>
-          <div class="col-md-5">
-            <label class="form-label small fw-bold text-muted">Beneficiario</label>
-            <select id="histBen" class="form-select form-select-sm"></select>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label small fw-bold text-muted">Categoría</label>
-            <select id="histCat" class="form-select form-select-sm"></select>
-          </div>
-          <div class="col-md-3 d-flex align-items-end">
-            <button id="btnBuscarHist" class="btn btn-primary btn-sm w-100 fw-bold">Buscar</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel Sticky de Conciliación -->
-      <div id="panelConciliacion" class="card panel-conc-sticky bg-white p-3 mb-3 shadow d-none">
-        <div class="row g-2 align-items-center text-center">
-          <div class="col-6 col-md-3">
-            <div class="small text-muted fw-bold">SALDO INICIAL</div>
-            <div id="concSaldoInicial" class="fw-bold text-dark">$ 0</div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="small text-muted fw-bold">SALDO FINAL SISTEMA</div>
-            <div id="concSaldoFinal" class="fw-bold text-dark">$ 0</div>
-          </div>
-          <div class="col-md-3">
-            <label class="small text-muted fw-bold d-block">SALDO BANCO</label>
-            <input type="number" id="concSaldoBanco" step="0.01" class="form-control form-control-sm text-center fw-bold border-primary" placeholder="0.00">
-          </div>
-          <div class="col-md-3">
-            <div class="small text-muted fw-bold">DIFERENCIA</div>
-            <div id="concDiferencia" class="fw-bold fs-5 text-danger">$ 0</div>
-          </div>
-        </div>
-        <hr class="my-2">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="chkMarcarTodos">
-            <label class="form-check-label small fw-bold text-primary" for="chkMarcarTodos">
-              Marcar todos como conciliados
-            </label>
-          </div>
-          <div class="small text-muted">
-            Suma seleccionados: <strong id="concSumaMarcados">$ 0</strong>
-          </div>
-          <button id="btnGuardarConc" class="btn btn-success btn-sm fw-bold">💾 Guardar Conciliación</button>
-        </div>
-      </div>
-
-      <!-- Lista de Resultados -->
-      <div id="listaHistorial" class="d-flex flex-column gap-2">
-        <div class="text-center text-muted py-4">Usa los filtros y pulsa Buscar para consultar registros.</div>
-      </div>
-    </section>
-
-   <!-- =================================================================== -->
-    <!-- VISTA 4: CONFIGURACIÓN (CUENTAS, BENEFICIARIOS Y CATEGORÍAS)        -->
-    <!-- =================================================================== -->
-    <section id="vista-configuracion" class="d-none">
-      <h5 class="fw-bold text-dark mb-3">Configuración de Catálogos</h5>
-
-      <ul class="nav nav-tabs mb-3" id="tabsConfiguracion">
-        <li class="nav-item">
-          <button class="nav-link active fw-semibold" data-tabcfg="cuentas" type="button">💳 Cuentas</button>
-        </li>
-        <li class="nav-item">
-          <button class="nav-link fw-semibold" data-tabcfg="beneficiarios" type="button">🤝 Beneficiarios</button>
-        </li>
-        <li class="nav-item">
-          <button class="nav-link fw-semibold" data-tabcfg="categorias" type="button">🏷️ Categorías</button>
-        </li>
-      </ul>
-
-      <!-- SUBPESTAÑA 1: CUENTAS -->
-      <div id="cfg-cuentas" class="card p-3 shadow-sm border-0">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="fw-bold mb-0">Cuentas Bancarias y Efectivo</h6>
-          <button type="button" id="btnNuevaCuenta" class="btn btn-primary btn-sm fw-bold">+ Nueva Cuenta</button>
-        </div>
-        <div id="tablaCuentasCfg" class="table-responsive">
-          <div class="text-center text-muted py-3">Cargando cuentas...</div>
-        </div>
-      </div>
-
-      <!-- SUBPESTAÑA 2: BENEFICIARIOS -->
-      <div id="cfg-beneficiarios" class="card p-3 shadow-sm border-0 d-none">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-          <h6 class="fw-bold mb-0">Beneficiarios y Comercios</h6>
-          <div class="d-flex gap-2">
-            <input type="text" id="txtFiltroBenCfg" class="form-control form-control-sm" placeholder="Filtrar..." style="width: 190px;">
-            <button type="button" id="btnNuevoBen" class="btn btn-primary btn-sm fw-bold">+ Nuevo</button>
-          </div>
-        </div>
-
-        <button type="button" id="btnFusionarBen" class="btn btn-warning btn-sm w-100 fw-bold mb-2 d-none">
-          ✨ Fusionar Seleccionados
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel Central - Gestión Financiera</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background-color: #f4f7fa;
+      }
+      .navbar-brand {
+        font-weight: 700;
+        letter-spacing: 0.3px;
+      }
+      .card-total {
+        background: linear-gradient(135deg, #1a73e8, #0d47a1);
+        color: white;
+        border-radius: 12px;
+      }
+      .cuenta-item {
+        border-radius: 10px;
+        border: 1px solid #e3e8ee;
+        transition: transform 0.1s ease;
+      }
+      .cuenta-item:hover {
+        transform: translateY(-1px);
+      }
+      .form-card {
+        max-width: 720px;
+        margin: auto;
+        border-radius: 12px;
+        border: none;
+      }
+      .partida-card {
+        border-left: 6px solid #dc3545;
+        border-radius: 8px;
+        position: relative;
+      }
+      .partida-card.ingreso {
+        border-left-color: #198754;
+      }
+      .partida-card.transf {
+        border-left-color: #0d6efd;
+      }
+      .btn-del-partida {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        padding: 0;
+        line-height: 1;
+      }
+      .hist-card {
+        border-radius: 10px;
+        border: 1px solid #dadce0;
+        transition: background-color 0.15s ease;
+      }
+      .fila-conciliada {
+        background-color: #e8f5e9 !important;
+        border-color: #81c784 !important;
+      }
+      .panel-conc-sticky {
+        position: sticky;
+        top: 10px;
+        z-index: 100;
+        border: 2px solid #1a73e8;
+        border-radius: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Barra de Navegación -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
+      <div class="container">
+        <a class="navbar-brand" href="#" data-vista="saldos"
+          >Finanzas Personales</a
+        >
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#menuPrincipal"
+        >
+          <span class="navbar-toggler-icon"></span>
         </button>
-
-        <div id="tablaBenCfg" class="table-responsive" style="max-height: 480px; overflow-y: auto;">
-          <div class="text-center text-muted py-3">Cargando beneficiarios...</div>
-        </div>
-      </div>
-
-      <!-- SUBPESTAÑA 3: CATEGORÍAS -->
-      <div id="cfg-categorias" class="card p-3 shadow-sm border-0 d-none">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="fw-bold mb-0">Categorías Principales</h6>
-          <button type="button" id="btnNuevaCat" class="btn btn-primary btn-sm fw-bold">+ Nueva Categoría</button>
-        </div>
-        <div id="tablaCatCfg" class="table-responsive">
-          <div class="text-center text-muted py-3">Cargando categorías...</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- MODAL: CREAR / EDITAR CUENTA -->
-    <div class="modal fade" id="modalCuentaCfg" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title fw-bold text-primary" id="tituloModalCuenta">Nueva Cuenta</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="collapse navbar-collapse" id="menuPrincipal">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link active" href="#" data-vista="saldos">Saldos</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-vista="registrar"
+                >Registrar Movimiento</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-vista="historial">Historial</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link disabled" href="#">Gastos</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-vista="configuracion"
+                >Configuración</a
+              >
+            </li>
+          </ul>
+          <div class="d-flex align-items-center gap-3">
+            <span id="usuarioEmail" class="text-white-50 small"></span>
+            <button id="btnSalir" class="btn btn-outline-light btn-sm">
+              Salir
+            </button>
           </div>
-          <div class="modal-body">
-            <input type="hidden" id="cfgAccId">
+        </div>
+      </div>
+    </nav>
+
+    <main class="container pb-5">
+      <!-- =================================================================== -->
+      <!-- VISTA 1: RESUMEN DE SALDOS                                          -->
+      <!-- =================================================================== -->
+      <section id="vista-saldos">
+        <div
+          class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2"
+        >
+          <h5 class="fw-bold text-dark mb-0">Resumen de Saldos</h5>
+          <div class="d-flex align-items-center gap-2">
+            <label for="fechaCorte" class="small text-muted mb-0">Corte:</label>
+            <input
+              type="date"
+              id="fechaCorte"
+              class="form-control form-control-sm"
+              style="width: 155px"
+            />
+            <button id="btnConsultarSaldos" class="btn btn-primary btn-sm">
+              Actualizar
+            </button>
+          </div>
+        </div>
+
+        <div class="card card-total p-4 mb-4 shadow-sm text-center">
+          <div class="small text-uppercase opacity-75">
+            Patrimonio Neto Consolidado (COP)
+          </div>
+          <h2 id="totalConsolidado" class="fw-bold mb-0 mt-1">$ 0</h2>
+        </div>
+
+        <div id="contenedorCuentas" class="d-flex flex-column gap-2">
+          <div class="text-center text-muted py-4">
+            Cargando saldos desde Supabase...
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================== -->
+      <!-- VISTA 2: REGISTRAR / EDITAR MOVIMIENTO                              -->
+      <!-- =================================================================== -->
+      <section id="vista-registrar" class="d-none">
+        <div class="card form-card shadow-sm p-4 bg-white">
+          <!-- Banner Modo Edición -->
+          <div
+            id="bannerEdicion"
+            class="alert alert-warning d-none d-flex justify-content-between align-items-center"
+          >
+            <span id="textoEdicion" class="fw-bold"
+              >✏️ Editando transacción</span
+            >
+            <button
+              type="button"
+              id="btnCancelarEdicion"
+              class="btn btn-sm btn-outline-dark"
+            >
+              Cancelar Edición
+            </button>
+          </div>
+
+          <!-- Selector de Tipo de Formulario -->
+          <ul
+            class="nav nav-pills nav-fill mb-4 bg-light p-1 rounded"
+            id="tabsRegistro"
+          >
+            <li class="nav-item">
+              <button
+                class="nav-link active fw-semibold"
+                data-subvista="simple"
+                type="button"
+              >
+                📝 Transacción
+              </button>
+            </li>
+            <li class="nav-item">
+              <button
+                class="nav-link fw-semibold"
+                data-subvista="transferencia"
+                type="button"
+              >
+                🔄 Transferencia
+              </button>
+            </li>
+            <li class="nav-item">
+              <button
+                class="nav-link fw-semibold"
+                data-subvista="compuesto"
+                type="button"
+              >
+                📊 Desglose
+              </button>
+            </li>
+          </ul>
+
+          <div id="alertaRegistro" class="alert d-none" role="alert"></div>
+
+          <!-- SUBVISTA A: TRANSACCIÓN SIMPLE (SERIE 1) -->
+          <form id="formSimple">
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label small fw-bold">Institución</label>
-                <input type="text" id="cfgAccInstitucion" class="form-control" list="dlInstituciones" placeholder="Ej: Nu Colombia">
-                <datalist id="dlInstituciones"></datalist>
+                <label class="form-label small fw-bold">Fecha</label>
+                <input type="date" id="txFecha" class="form-control" required />
               </div>
               <div class="col-md-6">
-                <label class="form-label small fw-bold">Tipo de Cuenta</label>
-                <select id="cfgAccTipo" class="form-select">
-                  <option value="Ahorros">Ahorros</option>
-                  <option value="Corriente">Corriente</option>
-                  <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
-                  <option value="Efectivo">Efectivo / Bolsillo</option>
-                  <option value="Inversión">Inversión</option>
-                  <option value="Pasivos">Pasivos</option>
+                <label class="form-label small fw-bold"
+                  >Tipo de Movimiento</label
+                >
+                <select id="txTipo" class="form-select" required>
+                  <option value="Gasto" selected>📉 Gasto (-)</option>
+                  <option value="Ingreso">📈 Ingreso (+)</option>
                 </select>
               </div>
+
               <div class="col-12">
-                <label class="form-label small fw-bold">Nombre de la Cuenta</label>
-                <input type="text" id="cfgAccNombre" class="form-control" placeholder="Ej: Cuenta Ahorros Principal">
+                <label class="form-label small fw-bold">Beneficiario</label>
+                <select
+                  id="txBeneficiario"
+                  class="form-select"
+                  required
+                ></select>
+              </div>
+
+              <div id="boxSugerencias" class="col-12 d-none">
+                <div
+                  class="p-2 rounded bg-primary-subtle border border-primary-subtle"
+                >
+                  <div class="small fw-bold text-primary mb-1">
+                    Sugerencias recientes (clic para aplicar):
+                  </div>
+                  <div
+                    id="listaSugerencias"
+                    class="d-flex flex-column gap-1"
+                  ></div>
+                </div>
+              </div>
+
+              <div id="boxNuevoBen" class="col-12 d-none">
+                <label class="form-label small fw-bold text-primary"
+                  >Nombre del Nuevo Beneficiario</label
+                >
+                <input
+                  type="text"
+                  id="txNuevoBen"
+                  class="form-control"
+                  placeholder="Escribe el nombre..."
+                />
+              </div>
+
+              <div class="col-md-7">
+                <label class="form-label small fw-bold">Cuenta</label>
+                <select id="txCuenta" class="form-select" required></select>
+              </div>
+              <div class="col-md-5">
+                <label class="form-label small fw-bold">Monto</label>
+                <div class="input-group">
+                  <span id="txMonedaBadge" class="input-group-text fw-bold"
+                    >COP</span
+                  >
+                  <input
+                    type="number"
+                    id="txMonto"
+                    class="form-control"
+                    step="0.01"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label small fw-bold">Categoría</label>
+                <select id="txCategoria" class="form-select" required></select>
               </div>
               <div class="col-md-6">
-                <label class="form-label small fw-bold">Fecha Apertura</label>
-                <input type="date" id="cfgAccFecha" class="form-control">
+                <label class="form-label small fw-bold">Subcategoría</label>
+                <select id="txSubcategoria" class="form-select"></select>
               </div>
-              <div class="col-md-6">
-                <label class="form-label small fw-bold">Moneda</label>
-                <select id="cfgAccMoneda" class="form-select"></select>
+
+              <div id="boxNuevaCat" class="col-md-6 d-none">
+                <label class="form-label small fw-bold text-primary"
+                  >Nueva Categoría</label
+                >
+                <input
+                  type="text"
+                  id="txNuevaCat"
+                  class="form-control"
+                  placeholder="Ej: Mascotas"
+                />
               </div>
-              <div class="col-md-6">
+              <div id="boxNuevaSub" class="col-md-6 d-none">
+                <label class="form-label small fw-bold text-primary"
+                  >Nueva Subcategoría</label
+                >
+                <input
+                  type="text"
+                  id="txNuevaSub"
+                  class="form-control"
+                  placeholder="Ej: Veterinario"
+                />
+              </div>
+
+              <div class="col-12">
+                <label class="form-label small fw-bold">Memorando</label>
+                <input
+                  type="text"
+                  id="txMemo"
+                  class="form-control"
+                  placeholder="Nota opcional..."
+                />
+              </div>
+
+              <div class="col-12 mt-4">
+                <button
+                  type="submit"
+                  id="btnGuardarSimple"
+                  class="btn btn-primary w-100 fw-bold py-2"
+                >
+                  Guardar Transacción
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <!-- SUBVISTA B: TRANSFERENCIA (SERIE 2) -->
+          <form id="formTransferencia" class="d-none">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label small fw-bold">Fecha</label>
+                <input type="date" id="trFecha" class="form-control" required />
+              </div>
+
+              <div class="col-md-7">
+                <label class="form-label small fw-bold">Cuenta Origen</label>
+                <select id="trOrigen" class="form-select" required></select>
+              </div>
+              <div class="col-md-5">
+                <label id="lblMontoOrigen" class="form-label small fw-bold"
+                  >Monto a Retirar</label
+                >
+                <input
+                  type="number"
+                  id="trMontoOrigen"
+                  class="form-control"
+                  step="0.01"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+
+              <div class="col-md-7">
+                <label class="form-label small fw-bold">Cuenta Destino</label>
+                <select id="trDestino" class="form-select" required></select>
+              </div>
+              <div id="boxMontoDestino" class="col-md-5 d-none">
+                <label
+                  id="lblMontoDestino"
+                  class="form-label small fw-bold text-primary"
+                  >Monto a Recibir</label
+                >
+                <input
+                  type="number"
+                  id="trMontoDestino"
+                  class="form-control"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div class="col-12">
+                <label class="form-label small fw-bold"
+                  >Nota / Comentario</label
+                >
+                <input
+                  type="text"
+                  id="trNota"
+                  class="form-control"
+                  placeholder="Nota opcional..."
+                />
+              </div>
+
+              <div class="col-12 mt-4">
+                <button
+                  type="submit"
+                  id="btnGuardarTr"
+                  class="btn btn-primary w-100 fw-bold py-2"
+                >
+                  Registrar Transferencia
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <!-- SUBVISTA C: ASIENTO COMPUESTO / DESGLOSE (SERIE 3) -->
+          <div id="formCompuesto" class="d-none">
+            <div
+              class="p-3 mb-3 rounded bg-primary-subtle border border-primary"
+            >
+              <label class="form-label small fw-bold text-primary"
+                >📂 Plantillas Guardadas</label
+              >
+              <div class="input-group input-group-sm mb-2">
+                <select id="selPlantillas" class="form-select">
+                  <option value="">-- Mis Plantillas --</option>
+                </select>
+                <button
+                  type="button"
+                  id="btnCargarPlantilla"
+                  class="btn btn-primary"
+                >
+                  Cargar
+                </button>
+                <button
+                  type="button"
+                  id="btnBorrarPlantilla"
+                  class="btn btn-danger"
+                >
+                  🗑️
+                </button>
+              </div>
+              <div class="input-group input-group-sm">
+                <input
+                  type="text"
+                  id="txtNombrePlantilla"
+                  class="form-control"
+                  placeholder="Nombre para guardar esta estructura..."
+                />
+                <button
+                  type="button"
+                  id="btnGuardarPlantilla"
+                  class="btn btn-outline-primary bg-white"
+                >
+                  Guardar Plantilla
+                </button>
+              </div>
+            </div>
+
+            <div class="p-3 mb-3 rounded border bg-light">
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold">Fecha</label>
+                  <input
+                    type="date"
+                    id="cmpFecha"
+                    class="form-control form-control-sm"
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold"
+                    >Tipo Asiento Principal</label
+                  >
+                  <select id="cmpTipo" class="form-select form-select-sm">
+                    <option value="GASTO">📉 Egreso / Gasto</option>
+                    <option value="INGRESO">💰 Ingreso</option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <label class="form-label small fw-bold"
+                    >Beneficiario Principal</label
+                  >
+                  <select
+                    id="cmpBen"
+                    class="form-select form-select-sm"
+                  ></select>
+                </div>
+                <div class="col-md-8">
+                  <label class="form-label small fw-bold"
+                    >Cuenta Origen / Fuente</label
+                  >
+                  <select
+                    id="cmpCuenta"
+                    class="form-select form-select-sm"
+                  ></select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-bold">Moneda</label>
+                  <input
+                    type="text"
+                    id="cmpMoneda"
+                    class="form-control form-control-sm"
+                    readonly
+                  />
+                </div>
+                <div class="col-12">
+                  <label class="form-label small fw-bold"
+                    >Monto Total (Referencia)</label
+                  >
+                  <input
+                    type="number"
+                    id="cmpMontoRef"
+                    class="form-control form-control-sm"
+                    step="0.01"
+                    placeholder="Ej: -800000 o 800000"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div
+              id="contenedorPartidas"
+              class="d-flex flex-column gap-3 mb-3"
+            ></div>
+
+            <button
+              type="button"
+              id="btnAddPartida"
+              class="btn btn-success btn-sm w-100 fw-bold mb-3"
+            >
+              + Añadir Partida Manual
+            </button>
+
+            <div
+              id="boxCuadre"
+              class="alert alert-danger text-end fw-bold py-2 mb-3"
+            >
+              Diferencia: $0.00
+            </div>
+
+            <button
+              type="button"
+              id="btnGuardarCompuesto"
+              class="btn btn-primary w-100 fw-bold py-2"
+              disabled
+            >
+              Guardar Asiento Compuesto
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================== -->
+      <!-- VISTA 3: HISTORIAL Y MODO CONCILIACIÓN                              -->
+      <!-- =================================================================== -->
+      <section id="vista-historial" class="d-none">
+        <div
+          class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2"
+        >
+          <h5 class="fw-bold text-dark mb-0">Historial y Conciliación</h5>
+          <div
+            class="form-check form-switch bg-white px-3 py-2 rounded border shadow-sm"
+          >
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="chkModoConciliacion"
+            />
+            <label
+              class="form-check-label fw-bold text-primary"
+              for="chkModoConciliacion"
+            >
+              🔍 Modo Conciliación
+            </label>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card p-3 mb-3 shadow-sm border-0">
+          <div class="row g-2">
+            <div class="col-md-3">
+              <label class="form-label small fw-bold text-muted">Desde</label>
+              <input
+                type="date"
+                id="histDesde"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold text-muted">Hasta</label>
+              <input
+                type="date"
+                id="histHasta"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-muted">Cuenta</label>
+              <select
+                id="histCuenta"
+                class="form-select form-select-sm"
+              ></select>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label small fw-bold text-muted"
+                >Beneficiario</label
+              >
+              <select id="histBen" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-bold text-muted"
+                >Categoría</label
+              >
+              <select id="histCat" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <button
+                id="btnBuscarHist"
+                class="btn btn-primary btn-sm w-100 fw-bold"
+              >
+                Buscar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel Sticky de Conciliación -->
+        <div
+          id="panelConciliacion"
+          class="card panel-conc-sticky bg-white p-3 mb-3 shadow d-none"
+        >
+          <div class="row g-2 align-items-center text-center">
+            <div class="col-6 col-md-3">
+              <div class="small text-muted fw-bold">SALDO INICIAL</div>
+              <div id="concSaldoInicial" class="fw-bold text-dark">$ 0</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="small text-muted fw-bold">SALDO FINAL SISTEMA</div>
+              <div id="concSaldoFinal" class="fw-bold text-dark">$ 0</div>
+            </div>
+            <div class="col-md-3">
+              <label class="small text-muted fw-bold d-block"
+                >SALDO BANCO</label
+              >
+              <input
+                type="number"
+                id="concSaldoBanco"
+                step="0.01"
+                class="form-control form-control-sm text-center fw-bold border-primary"
+                placeholder="0.00"
+              />
+            </div>
+            <div class="col-md-3">
+              <div class="small text-muted fw-bold">DIFERENCIA</div>
+              <div id="concDiferencia" class="fw-bold fs-5 text-danger">
+                $ 0
+              </div>
+            </div>
+          </div>
+          <hr class="my-2" />
+          <div
+            class="d-flex flex-wrap justify-content-between align-items-center gap-2"
+          >
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="chkMarcarTodos"
+              />
+              <label
+                class="form-check-label small fw-bold text-primary"
+                for="chkMarcarTodos"
+              >
+                Marcar todos como conciliados
+              </label>
+            </div>
+            <div class="small text-muted">
+              Suma seleccionados: <strong id="concSumaMarcados">$ 0</strong>
+            </div>
+            <button id="btnGuardarConc" class="btn btn-success btn-sm fw-bold">
+              💾 Guardar Conciliación
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista de Resultados -->
+        <div id="listaHistorial" class="d-flex flex-column gap-2">
+          <div class="text-center text-muted py-4">
+            Usa los filtros y pulsa Buscar para consultar registros.
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================== -->
+      <!-- VISTA 4: CONFIGURACIÓN (CUENTAS, BENEFICIARIOS Y CATEGORÍAS)        -->
+      <!-- =================================================================== -->
+      <section id="vista-configuracion" class="d-none">
+        <h5 class="fw-bold text-dark mb-3">Configuración de Catálogos</h5>
+
+        <ul class="nav nav-tabs mb-3" id="tabsConfiguracion">
+          <li class="nav-item">
+            <button
+              class="nav-link active fw-semibold"
+              data-tabcfg="cuentas"
+              type="button"
+            >
+              💳 Cuentas
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              class="nav-link fw-semibold"
+              data-tabcfg="beneficiarios"
+              type="button"
+            >
+              🤝 Beneficiarios
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              class="nav-link fw-semibold"
+              data-tabcfg="categorias"
+              type="button"
+            >
+              🏷️ Categorías
+            </button>
+          </li>
+        </ul>
+
+        <!-- SUBPESTAÑA 1: CUENTAS -->
+        <div id="cfg-cuentas" class="card p-3 shadow-sm border-0">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0">Cuentas Bancarias y Efectivo</h6>
+            <button
+              type="button"
+              id="btnNuevaCuenta"
+              class="btn btn-primary btn-sm fw-bold"
+            >
+              + Nueva Cuenta
+            </button>
+          </div>
+          <div id="tablaCuentasCfg" class="table-responsive">
+            <div class="text-center text-muted py-3">Cargando cuentas...</div>
+          </div>
+        </div>
+
+        <!-- SUBPESTAÑA 2: BENEFICIARIOS -->
+        <div id="cfg-beneficiarios" class="card p-3 shadow-sm border-0 d-none">
+          <div
+            class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"
+          >
+            <h6 class="fw-bold mb-0">Beneficiarios y Comercios</h6>
+            <div class="d-flex gap-2">
+              <input
+                type="text"
+                id="txtFiltroBenCfg"
+                class="form-control form-control-sm"
+                placeholder="Filtrar..."
+                style="width: 190px"
+              />
+              <button
+                type="button"
+                id="btnNuevoBen"
+                class="btn btn-primary btn-sm fw-bold"
+              >
+                + Nuevo
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            id="btnFusionarBen"
+            class="btn btn-warning btn-sm w-100 fw-bold mb-2 sticky-top shadow-sm d-none"
+            style="top: 10px; z-index: 100"
+          >
+            ✨ Fusionar Seleccionados
+          </button>
+
+          <div id="tablaBenCfg" class="table-responsive">
+            <div class="text-center text-muted py-3">
+              Cargando beneficiarios...
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBPESTAÑA 3: CATEGORÍAS -->
+        <div id="cfg-categorias" class="card p-3 shadow-sm border-0 d-none">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0">Categorías Principales</h6>
+            <button
+              type="button"
+              id="btnNuevaCat"
+              class="btn btn-primary btn-sm fw-bold"
+            >
+              + Nueva Categoría
+            </button>
+          </div>
+          <div id="tablaCatCfg" class="table-responsive">
+            <div class="text-center text-muted py-3">
+              Cargando categorías...
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MODAL: CREAR / EDITAR CUENTA -->
+      <div class="modal fade" id="modalCuentaCfg" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5
+                class="modal-title fw-bold text-primary"
+                id="tituloModalCuenta"
+              >
+                Nueva Cuenta
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="cfgAccId" />
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold">Institución</label>
+                  <input
+                    type="text"
+                    id="cfgAccInstitucion"
+                    class="form-control"
+                    list="dlInstituciones"
+                    placeholder="Ej: Nu Colombia"
+                  />
+                  <datalist id="dlInstituciones"></datalist>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold">Tipo de Cuenta</label>
+                  <select id="cfgAccTipo" class="form-select">
+                    <option value="Ahorros">Ahorros</option>
+                    <option value="Corriente">Corriente</option>
+                    <option value="Tarjeta de Crédito">
+                      Tarjeta de Crédito
+                    </option>
+                    <option value="Efectivo">Efectivo / Bolsillo</option>
+                    <option value="Inversión">Inversión</option>
+                    <option value="Pasivos">Pasivos</option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <label class="form-label small fw-bold"
+                    >Nombre de la Cuenta</label
+                  >
+                  <input
+                    type="text"
+                    id="cfgAccNombre"
+                    class="form-control"
+                    placeholder="Ej: Cuenta Ahorros Principal"
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold">Fecha Apertura</label>
+                  <input type="date" id="cfgAccFecha" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold">Moneda</label>
+                  <select id="cfgAccMoneda" class="form-select"></select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label small fw-bold">Estado</label>
+                  <select id="cfgAccEstado" class="form-select">
+                    <option value="Activa">Activa</option>
+                    <option value="Inactiva">Inactiva</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                id="btnGuardarCuentaCfg"
+                class="btn btn-primary fw-bold"
+              >
+                Guardar Cuenta
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: CREAR / EDITAR BENEFICIARIO -->
+      <div class="modal fade" id="modalBenCfg" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title fw-bold text-primary" id="tituloModalBen">
+                Nuevo Beneficiario
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+              ></button>
+            </div>
+            <div class="modal-body">
+              <input type="hidden" id="cfgBenId" />
+              <div class="mb-3">
+                <label class="form-label small fw-bold">Nombre</label>
+                <input
+                  type="text"
+                  id="cfgBenNombre"
+                  class="form-control"
+                  placeholder="Comercio o persona..."
+                />
+              </div>
+              <div>
                 <label class="form-label small fw-bold">Estado</label>
-                <select id="cfgAccEstado" class="form-select">
-                  <option value="Activa">Activa</option>
-                  <option value="Inactiva">Inactiva</option>
+                <select id="cfgBenEstado" class="form-select">
+                  <option value="Activo">Activo</option>
+                  <option value="Inactivo">Inactivo</option>
                 </select>
               </div>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" id="btnGuardarCuentaCfg" class="btn btn-primary fw-bold">Guardar Cuenta</button>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                data-bs-dismiss="modal"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                id="btnGuardarBenCfg"
+                class="btn btn-primary btn-sm fw-bold"
+              >
+                Guardar
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- MODAL: CREAR / EDITAR BENEFICIARIO -->
-    <div class="modal fade" id="modalBenCfg" tabindex="-1">
-      <div class="modal-dialog modal-sm">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title fw-bold text-primary" id="tituloModalBen">Nuevo Beneficiario</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <input type="hidden" id="cfgBenId">
-            <div class="mb-3">
-              <label class="form-label small fw-bold">Nombre</label>
-              <input type="text" id="cfgBenNombre" class="form-control" placeholder="Comercio o persona...">
+      <!-- MODAL: SUBCATEGORÍAS Y RENOMBRADO DE CATEGORÍA -->
+      <div class="modal fade" id="modalCatDetalleCfg" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <div class="d-flex align-items-center gap-2">
+                <h5 class="modal-title fw-bold mb-0" id="tituloModalCat">
+                  📂 Categoría
+                </h5>
+                <button
+                  type="button"
+                  id="btnRenombrarCat"
+                  class="btn btn-sm btn-light"
+                >
+                  ✏️ Renombrar
+                </button>
+              </div>
+              <button
+                type="button"
+                class="btn-close btn-close-white"
+                data-bs-dismiss="modal"
+              ></button>
             </div>
-            <div>
-              <label class="form-label small fw-bold">Estado</label>
-              <select id="cfgBenEstado" class="form-select">
-                <option value="Activo">Activo</option>
-                <option value="Inactivo">Inactivo</option>
-              </select>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" id="btnGuardarBenCfg" class="btn btn-primary btn-sm fw-bold">Guardar</button>
-          </div>
-        </div>
-      </div>
-    </div>
+            <div class="modal-body">
+              <label class="form-label small fw-bold text-muted text-uppercase"
+                >Subcategorías Registradas</label
+              >
+              <div
+                id="listaSubcatsCfg"
+                class="border rounded mb-3"
+                style="max-height: 260px; overflow-y: auto"
+              ></div>
 
-    <!-- MODAL: SUBCATEGORÍAS Y RENOMBRADO DE CATEGORÍA -->
-    <div class="modal fade" id="modalCatDetalleCfg" tabindex="-1">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header bg-primary text-white">
-            <div class="d-flex align-items-center gap-2">
-              <h5 class="modal-title fw-bold mb-0" id="tituloModalCat">📂 Categoría</h5>
-              <button type="button" id="btnRenombrarCat" class="btn btn-sm btn-light">✏️ Renombrar</button>
-            </div>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <label class="form-label small fw-bold text-muted text-uppercase">Subcategorías Registradas</label>
-            <div id="listaSubcatsCfg" class="border rounded mb-3" style="max-height: 260px; overflow-y: auto;"></div>
-
-            <div class="bg-light p-3 rounded border">
-              <label class="form-label small fw-bold">Añadir nueva subcategoría</label>
-              <div class="input-group input-group-sm">
-                <input type="text" id="txtNuevaSubcatCfg" class="form-control" placeholder="Ej: Energía, Agua, Internet...">
-                <button type="button" id="btnAddSubcatCfg" class="btn btn-primary fw-bold">Añadir</button>
+              <div class="bg-light p-3 rounded border">
+                <label class="form-label small fw-bold"
+                  >Añadir nueva subcategoría</label
+                >
+                <div class="input-group input-group-sm">
+                  <input
+                    type="text"
+                    id="txtNuevaSubcatCfg"
+                    class="form-control"
+                    placeholder="Ej: Energía, Agua, Internet..."
+                  />
+                  <button
+                    type="button"
+                    id="btnAddSubcatCfg"
+                    class="btn btn-primary fw-bold"
+                  >
+                    Añadir
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div> 
+    </main>
 
-  </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+      import { verificarSesion, cerrarSesion } from "./js/auth.js";
+      import { obtenerResumenSaldosWeb } from "./js/saldos.js";
+      import {
+        obtenerCatalogosWeb,
+        obtenerSugerenciasBeneficiarioWeb,
+        guardarMovimientoWeb,
+        obtenerPlantillasWeb,
+        cargarPlantillaWeb,
+        guardarPlantillaWeb,
+        eliminarPlantillaWeb,
+      } from "./js/transacciones.js";
+      import {
+        buscarHistorialWeb,
+        obtenerMovimientoPorIdWeb,
+        eliminarMovimientoWeb,
+        guardarConciliacionWeb,
+        obtenerSaldosConciliacionWeb,
+      } from "./js/historial.js";
+      import {
+        obtenerDatosCuentasWeb,
+        obtenerListasConfiguracionWeb,
+        guardarCuentaWeb,
+        obtenerDatosBeneficiariosWeb,
+        guardarBeneficiarioWeb,
+        eliminarBeneficiarioWeb,
+        fusionarBeneficiariosWeb,
+        obtenerCategoriasPrincipalesWeb,
+        obtenerSubcategoriasPorCatWeb,
+        guardarCategoriaWeb,
+        renombrarCategoriaPrincipalWeb,
+        actualizarSubcategoriaMasivoWeb,
+      } from "./js/configuracion.js";
+      const session = await verificarSesion();
+      if (!session) throw new Error("Sin sesión");
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script type="module">
-    import { verificarSesion, cerrarSesion } from './js/auth.js';
-    import { obtenerResumenSaldosWeb } from './js/saldos.js';
-    import {
-      obtenerCatalogosWeb,
-      obtenerSugerenciasBeneficiarioWeb,
-      guardarMovimientoWeb,
-      obtenerPlantillasWeb,
-      cargarPlantillaWeb,
-      guardarPlantillaWeb,
-      eliminarPlantillaWeb
-    } from './js/transacciones.js';
-    import {
-      buscarHistorialWeb,
-      obtenerMovimientoPorIdWeb,
-      eliminarMovimientoWeb,
-      guardarConciliacionWeb,
-      obtenerSaldosConciliacionWeb
-    } from './js/historial.js';
-import {
-      obtenerDatosCuentasWeb,
-      obtenerListasConfiguracionWeb,
-      guardarCuentaWeb,
-      obtenerDatosBeneficiariosWeb,
-      guardarBeneficiarioWeb,
-      eliminarBeneficiarioWeb,
-      fusionarBeneficiariosWeb,
-      obtenerCategoriasPrincipalesWeb,
-      obtenerSubcategoriasPorCatWeb,
-      guardarCategoriaWeb,
-      renombrarCategoriaPrincipalWeb,
-      actualizarSubcategoriaMasivoWeb
-    } from './js/configuracion.js';
-    const session = await verificarSesion();
-    if (!session) throw new Error('Sin sesión');
+      document.getElementById("usuarioEmail").textContent = session.user.email;
+      document
+        .getElementById("btnSalir")
+        .addEventListener("click", cerrarSesion);
 
-    document.getElementById('usuarioEmail').textContent = session.user.email;
-    document.getElementById('btnSalir').addEventListener('click', cerrarSesion);
+      const hoy = new Date();
+      const hoyISO = new Date(Date.now() - hoy.getTimezoneOffset() * 60000)
+        .toISOString()
+        .split("T")[0];
+      const primerDiaMesISO = new Date(
+        hoy.getFullYear(),
+        hoy.getMonth(),
+        1 - hoy.getTimezoneOffset() / 1440,
+      )
+        .toISOString()
+        .split("T")[0];
 
-    const hoy = new Date();
-    const hoyISO = new Date(Date.now() - hoy.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-    const primerDiaMesISO = new Date(hoy.getFullYear(), hoy.getMonth(), 1 - hoy.getTimezoneOffset() / 1440).toISOString().split('T')[0];
+      let catalogos = null;
+      let idEnEdicion = null;
+      let movimientosHistorial = [];
+      let saldoFinalSistemaNum = 0;
 
-    let catalogos = null;
-    let idEnEdicion = null;
-    let movimientosHistorial = [];
-    let saldoFinalSistemaNum = 0;
+      // --- NAVEGACIÓN ENTRE VISTAS ---
+      async function activarVista(vista) {
+        document
+          .querySelectorAll("[data-vista]")
+          .forEach((l) =>
+            l.classList.toggle("active", l.dataset.vista === vista),
+          );
+        document
+          .getElementById("vista-saldos")
+          .classList.toggle("d-none", vista !== "saldos");
+        document
+          .getElementById("vista-registrar")
+          .classList.toggle("d-none", vista !== "registrar");
+        document
+          .getElementById("vista-historial")
+          .classList.toggle("d-none", vista !== "historial");
+        document
+          .getElementById("vista-configuracion")
+          .classList.toggle("d-none", vista !== "configuracion");
 
-    // --- NAVEGACIÓN ENTRE VISTAS ---
-    async function activarVista(vista) {
-      document.querySelectorAll('[data-vista]').forEach(l => l.classList.toggle('active', l.dataset.vista === vista));
-      document.getElementById('vista-saldos').classList.toggle('d-none', vista !== 'saldos');
-      document.getElementById('vista-registrar').classList.toggle('d-none', vista !== 'registrar');
-      document.getElementById('vista-historial').classList.toggle('d-none', vista !== 'historial');
-      document.getElementById('vista-configuracion').classList.toggle('d-none', vista !== 'configuracion');
-
-      if (!catalogos && (vista === 'registrar' || vista === 'historial')) {
-        await inicializarCatalogosYFormularios();
+        if (!catalogos && (vista === "registrar" || vista === "historial")) {
+          await inicializarCatalogosYFormularios();
+        }
+        if (vista === "saldos") cargarSaldos();
+        if (vista === "configuracion") await inicializarConfiguracion();
       }
-      if (vista === 'saldos') cargarSaldos();
-      if (vista === 'configuracion') await inicializarConfiguracion();
-    }
 
-    document.querySelectorAll('[data-vista]').forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        activarVista(link.dataset.vista);
+      document.querySelectorAll("[data-vista]").forEach((link) => {
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          activarVista(link.dataset.vista);
+        });
       });
-    });
 
-    // --- FORMATEO MONEDA ---
-    const fmtCOP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
-    function formatearMoneda(valor, moneda = 'COP') {
-      const num = parseFloat(valor) || 0;
-      if (moneda === 'COP') return fmtCOP.format(num);
-      return `${moneda} ${num.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
+      // --- FORMATEO MONEDA ---
+      const fmtCOP = new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        maximumFractionDigits: 0,
+      });
+      function formatearMoneda(valor, moneda = "COP") {
+        const num = parseFloat(valor) || 0;
+        if (moneda === "COP") return fmtCOP.format(num);
+        return `${moneda} ${num.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      }
 
-    // --- VISTA 1: SALDOS ---
-    const inputFecha = document.getElementById('fechaCorte');
-    inputFecha.value = hoyISO;
+      // --- VISTA 1: SALDOS ---
+      const inputFecha = document.getElementById("fechaCorte");
+      inputFecha.value = hoyISO;
 
-    async function cargarSaldos() {
-      const contenedor = document.getElementById('contenedorCuentas');
-      contenedor.innerHTML = '<div class="text-center text-muted py-4">Calculando saldos...</div>';
-      try {
-        const cuentas = await obtenerResumenSaldosWeb(inputFecha.value);
-        let totalCOP = 0;
-        contenedor.innerHTML = cuentas.map(c => {
-          totalCOP += c.saldoCOP;
-          const colorMonto = c.saldoOriginal < 0 ? 'text-danger' : 'text-success';
-          const subCOP = c.moneda !== 'COP' ? `<div class="text-muted small">≈ ${fmtCOP.format(c.saldoCOP)}</div>` : '';
-          return `
+      async function cargarSaldos() {
+        const contenedor = document.getElementById("contenedorCuentas");
+        contenedor.innerHTML =
+          '<div class="text-center text-muted py-4">Calculando saldos...</div>';
+        try {
+          const cuentas = await obtenerResumenSaldosWeb(inputFecha.value);
+          let totalCOP = 0;
+          contenedor.innerHTML = cuentas
+            .map((c) => {
+              totalCOP += c.saldoCOP;
+              const colorMonto =
+                c.saldoOriginal < 0 ? "text-danger" : "text-success";
+              const subCOP =
+                c.moneda !== "COP"
+                  ? `<div class="text-muted small">≈ ${fmtCOP.format(c.saldoCOP)}</div>`
+                  : "";
+              return `
             <div class="card cuenta-item bg-white px-3 py-2 shadow-sm">
               <div class="d-flex justify-content-between align-items-center">
                 <div>
                   <div class="fw-bold text-dark">${c.nombre}</div>
-                  <div class="text-muted small">${c.institucion || '[Sin Institución]'} | ${c.moneda}</div>
+                  <div class="text-muted small">${c.institucion || "[Sin Institución]"} | ${c.moneda}</div>
                 </div>
                 <div class="text-end">
                   <div class="fw-bold ${colorMonto}">${formatearMoneda(c.saldoOriginal, c.moneda)}</div>
@@ -668,283 +1145,383 @@ import {
                 </div>
               </div>
             </div>`;
-        }).join('');
-        document.getElementById('totalConsolidado').textContent = fmtCOP.format(totalCOP);
-      } catch (err) {
-        contenedor.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+            })
+            .join("");
+          document.getElementById("totalConsolidado").textContent =
+            fmtCOP.format(totalCOP);
+        } catch (err) {
+          contenedor.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+        }
       }
-    }
-    document.getElementById('btnConsultarSaldos').addEventListener('click', cargarSaldos);
-    cargarSaldos();
+      document
+        .getElementById("btnConsultarSaldos")
+        .addEventListener("click", cargarSaldos);
+      cargarSaldos();
 
-    // --- INICIALIZACIÓN DE CATÁLOGOS ---
-    async function inicializarCatalogosYFormularios() {
-      catalogos = await obtenerCatalogosWeb();
+      // --- INICIALIZACIÓN DE CATÁLOGOS ---
+      async function inicializarCatalogosYFormularios() {
+        catalogos = await obtenerCatalogosWeb();
 
-      const optsBen = catalogos.beneficiarios.map(b => `<option value="${b}">${b}</option>`).join('');
-      const optsCuentas = catalogos.cuentas.map(c => `<option value="${c}">${c}</option>`).join('');
-      const optsCats = Object.keys(catalogos.relacion).sort().map(c => `<option value="${c}">${c}</option>`).join('');
+        const optsBen = catalogos.beneficiarios
+          .map((b) => `<option value="${b}">${b}</option>`)
+          .join("");
+        const optsCuentas = catalogos.cuentas
+          .map((c) => `<option value="${c}">${c}</option>`)
+          .join("");
+        const optsCats = Object.keys(catalogos.relacion)
+          .sort()
+          .map((c) => `<option value="${c}">${c}</option>`)
+          .join("");
 
-      // Formularios de registro
-      document.getElementById('txBeneficiario').innerHTML =
-        `<option value="">-- Seleccionar --</option><option value="NUEVO" class="fw-bold text-primary">➕ -- AGREGAR NUEVO --</option>${optsBen}`;
-      document.getElementById('cmpBen').innerHTML = `<option value="">-- Seleccionar --</option>${optsBen}`;
-      document.getElementById('txCuenta').innerHTML = `<option value="">-- Seleccionar --</option>${optsCuentas}`;
-      document.getElementById('trOrigen').innerHTML = `<option value="">-- Origen --</option>${optsCuentas}`;
-      document.getElementById('trDestino').innerHTML = `<option value="">-- Destino --</option>${optsCuentas}`;
-      document.getElementById('cmpCuenta').innerHTML = `<option value="">-- Seleccionar --</option>${optsCuentas}`;
+        // Formularios de registro
+        document.getElementById("txBeneficiario").innerHTML =
+          `<option value="">-- Seleccionar --</option><option value="NUEVO" class="fw-bold text-primary">➕ -- AGREGAR NUEVO --</option>${optsBen}`;
+        document.getElementById("cmpBen").innerHTML =
+          `<option value="">-- Seleccionar --</option>${optsBen}`;
+        document.getElementById("txCuenta").innerHTML =
+          `<option value="">-- Seleccionar --</option>${optsCuentas}`;
+        document.getElementById("trOrigen").innerHTML =
+          `<option value="">-- Origen --</option>${optsCuentas}`;
+        document.getElementById("trDestino").innerHTML =
+          `<option value="">-- Destino --</option>${optsCuentas}`;
+        document.getElementById("cmpCuenta").innerHTML =
+          `<option value="">-- Seleccionar --</option>${optsCuentas}`;
 
-      // Filtros de Historial
-      document.getElementById('histCuenta').innerHTML = `<option value="">-- Todas las Cuentas --</option>${optsCuentas}`;
-      document.getElementById('histBen').innerHTML = `<option value="">-- Todos los Beneficiarios --</option>${optsBen}`;
-      document.getElementById('histCat').innerHTML = `<option value="">-- Todas las Categorías --</option>${optsCats}`;
-      document.getElementById('histDesde').value = primerDiaMesISO;
-      document.getElementById('histHasta').value = hoyISO;
+        // Filtros de Historial
+        document.getElementById("histCuenta").innerHTML =
+          `<option value="">-- Todas las Cuentas --</option>${optsCuentas}`;
+        document.getElementById("histBen").innerHTML =
+          `<option value="">-- Todos los Beneficiarios --</option>${optsBen}`;
+        document.getElementById("histCat").innerHTML =
+          `<option value="">-- Todas las Categorías --</option>${optsCats}`;
+        document.getElementById("histDesde").value = primerDiaMesISO;
+        document.getElementById("histHasta").value = hoyISO;
 
-      // Fechas registro
-      document.getElementById('txFecha').value = hoyISO;
-      document.getElementById('trFecha').value = hoyISO;
-      document.getElementById('cmpFecha').value = hoyISO;
+        // Fechas registro
+        document.getElementById("txFecha").value = hoyISO;
+        document.getElementById("trFecha").value = hoyISO;
+        document.getElementById("cmpFecha").value = hoyISO;
 
-      filtrarCategoriasSimple();
-      await refrescarPlantillas();
-      agregarPartidaCompuesta();
-    }
-
-    // --- VISTA 2: REGISTRAR / EDITAR ---
-    function mostrarAlertaReg(texto, tipo = 'success') {
-      const el = document.getElementById('alertaRegistro');
-      el.className = `alert alert-${tipo}`;
-      el.textContent = texto;
-      el.classList.remove('d-none');
-      setTimeout(() => el.classList.add('d-none'), 4500);
-    }
-
-    function seleccionarSubvistaRegistro(sub) {
-      document.querySelectorAll('#tabsRegistro button').forEach(b => b.classList.toggle('active', b.dataset.subvista === sub));
-      document.getElementById('formSimple').classList.toggle('d-none', sub !== 'simple');
-      document.getElementById('formTransferencia').classList.toggle('d-none', sub !== 'transferencia');
-      document.getElementById('formCompuesto').classList.toggle('d-none', sub !== 'compuesto');
-    }
-
-    document.querySelectorAll('#tabsRegistro button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (idEnEdicion) return; // Evitar cambiar tipo de serie mientras se edita
-        seleccionarSubvistaRegistro(btn.dataset.subvista);
-      });
-    });
-
-    function salirModoEdicion() {
-      idEnEdicion = null;
-      document.getElementById('bannerEdicion').classList.add('d-none');
-      document.getElementById('btnGuardarSimple').textContent = 'Guardar Transacción';
-      document.getElementById('btnGuardarTr').textContent = 'Registrar Transferencia';
-      document.getElementById('btnGuardarCompuesto').textContent = 'Guardar Asiento Compuesto';
-    }
-
-    document.getElementById('btnCancelarEdicion').addEventListener('click', () => {
-      salirModoEdicion();
-      activarVista('historial');
-    });
-
-    // Subvista A: Simple
-    function filtrarCategoriasSimple() {
-      const tipo = document.getElementById('txTipo').value;
-      const sel = document.getElementById('txCategoria');
-      sel.innerHTML = '<option value="">-- Sel --</option><option value="NUEVA_CAT" class="fw-bold text-primary">➕ NUEVA CAT.</option>';
-      Object.keys(catalogos.relacion).sort().forEach(cat => {
-        if (catalogos.tiposCat[cat] === tipo) sel.add(new Option(cat, cat));
-      });
-      filtrarSubSimple();
-    }
-
-    function filtrarSubSimple() {
-      const cat = document.getElementById('txCategoria').value;
-      const sub = document.getElementById('txSubcategoria');
-      document.getElementById('boxNuevaCat').classList.toggle('d-none', cat !== 'NUEVA_CAT');
-      sub.innerHTML = '<option value="">(Ninguna)</option><option value="NUEVA_SUB" class="fw-bold text-primary">➕ NUEVA SUB.</option>';
-      if (cat && catalogos.relacion[cat]) {
-        catalogos.relacion[cat].sort().forEach(s => sub.add(new Option(s, s)));
+        filtrarCategoriasSimple();
+        await refrescarPlantillas();
+        agregarPartidaCompuesta();
       }
-      document.getElementById('boxNuevaSub').classList.add('d-none');
-    }
 
-    document.getElementById('txTipo').addEventListener('change', filtrarCategoriasSimple);
-    document.getElementById('txCategoria').addEventListener('change', filtrarSubSimple);
-    document.getElementById('txSubcategoria').addEventListener('change', (e) => {
-      document.getElementById('boxNuevaSub').classList.toggle('d-none', e.target.value !== 'NUEVA_SUB');
-    });
-    document.getElementById('txCuenta').addEventListener('change', (e) => {
-      document.getElementById('txMonedaBadge').textContent = catalogos.mapaCuentas[e.target.value] || 'COP';
-      cargarSugerenciasBen();
-    });
+      // --- VISTA 2: REGISTRAR / EDITAR ---
+      function mostrarAlertaReg(texto, tipo = "success") {
+        const el = document.getElementById("alertaRegistro");
+        el.className = `alert alert-${tipo}`;
+        el.textContent = texto;
+        el.classList.remove("d-none");
+        setTimeout(() => el.classList.add("d-none"), 4500);
+      }
 
-    async function cargarSugerenciasBen() {
-      if (idEnEdicion) return;
-      const ben = document.getElementById('txBeneficiario').value;
-      const cuenta = document.getElementById('txCuenta').value;
-      document.getElementById('boxNuevoBen').classList.toggle('d-none', ben !== 'NUEVO');
+      function seleccionarSubvistaRegistro(sub) {
+        document
+          .querySelectorAll("#tabsRegistro button")
+          .forEach((b) =>
+            b.classList.toggle("active", b.dataset.subvista === sub),
+          );
+        document
+          .getElementById("formSimple")
+          .classList.toggle("d-none", sub !== "simple");
+        document
+          .getElementById("formTransferencia")
+          .classList.toggle("d-none", sub !== "transferencia");
+        document
+          .getElementById("formCompuesto")
+          .classList.toggle("d-none", sub !== "compuesto");
+      }
 
-      const boxSug = document.getElementById('boxSugerencias');
-      const lista = document.getElementById('listaSugerencias');
-      if (!ben || ben === 'NUEVO') { boxSug.classList.add('d-none'); return; }
-
-      const resultados = await obtenerSugerenciasBeneficiarioWeb(ben, cuenta);
-      if (resultados.length === 0) { boxSug.classList.add('d-none'); return; }
-
-      lista.innerHTML = '';
-      resultados.forEach(res => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'btn btn-sm btn-light border text-start';
-        b.innerHTML = `<strong>${res.fecha}</strong>: ${res.cuenta} | $${res.monto} <small class="text-muted">(${res.categoria})</small>`;
-        b.onclick = () => {
-          document.getElementById('txTipo').value = res.tipo;
-          filtrarCategoriasSimple();
-          document.getElementById('txCuenta').value = res.cuenta;
-          document.getElementById('txMonedaBadge').textContent = catalogos.mapaCuentas[res.cuenta] || 'COP';
-          document.getElementById('txMonto').value = res.monto;
-          document.getElementById('txMemo').value = res.memo;
-          document.getElementById('txCategoria').value = res.categoria;
-          filtrarSubSimple();
-          document.getElementById('txSubcategoria').value = res.subcategoria;
-          boxSug.classList.add('d-none');
-        };
-        lista.appendChild(b);
+      document.querySelectorAll("#tabsRegistro button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (idEnEdicion) return; // Evitar cambiar tipo de serie mientras se edita
+          seleccionarSubvistaRegistro(btn.dataset.subvista);
+        });
       });
-      boxSug.classList.remove('d-none');
-    }
-    document.getElementById('txBeneficiario').addEventListener('change', cargarSugerenciasBen);
 
-    document.getElementById('formSimple').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById('btnGuardarSimple');
-      btn.disabled = true;
-      btn.textContent = '⏳ Guardando...';
+      function salirModoEdicion() {
+        idEnEdicion = null;
+        document.getElementById("bannerEdicion").classList.add("d-none");
+        document.getElementById("btnGuardarSimple").textContent =
+          "Guardar Transacción";
+        document.getElementById("btnGuardarTr").textContent =
+          "Registrar Transferencia";
+        document.getElementById("btnGuardarCompuesto").textContent =
+          "Guardar Asiento Compuesto";
+      }
 
-      try {
-        const ben = document.getElementById('txBeneficiario').value;
-        const cat = document.getElementById('txCategoria').value;
-        const sub = document.getElementById('txSubcategoria').value;
-        const estabaEditando = Boolean(idEnEdicion);
-
-        const msg = await guardarMovimientoWeb({
-          id: idEnEdicion || '',
-          fecha: document.getElementById('txFecha').value,
-          beneficiario: ben === 'NUEVO' ? document.getElementById('txNuevoBen').value.trim() : ben,
-          tipo: document.getElementById('txTipo').value,
-          cuenta: document.getElementById('txCuenta').value,
-          moneda: document.getElementById('txMonedaBadge').textContent,
-          monto: document.getElementById('txMonto').value,
-          categoria: cat === 'NUEVA_CAT' ? document.getElementById('txNuevaCat').value.trim() : cat,
-          subcategoria: sub === 'NUEVA_SUB' ? document.getElementById('txNuevaSub').value.trim() : sub,
-          memo: document.getElementById('txMemo').value.trim()
+      document
+        .getElementById("btnCancelarEdicion")
+        .addEventListener("click", () => {
+          salirModoEdicion();
+          activarVista("historial");
         });
 
-        document.getElementById('txMonto').value = '';
-        document.getElementById('txMemo').value = '';
-        salirModoEdicion();
+      // Subvista A: Simple
+      function filtrarCategoriasSimple() {
+        const tipo = document.getElementById("txTipo").value;
+        const sel = document.getElementById("txCategoria");
+        sel.innerHTML =
+          '<option value="">-- Sel --</option><option value="NUEVA_CAT" class="fw-bold text-primary">➕ NUEVA CAT.</option>';
+        Object.keys(catalogos.relacion)
+          .sort()
+          .forEach((cat) => {
+            if (catalogos.tiposCat[cat] === tipo) sel.add(new Option(cat, cat));
+          });
+        filtrarSubSimple();
+      }
 
-        if (estabaEditando) {
-          await activarVista('historial');
-          await ejecutarBusquedaHistorial();
-        } else {
-          mostrarAlertaReg(msg, 'success');
+      function filtrarSubSimple() {
+        const cat = document.getElementById("txCategoria").value;
+        const sub = document.getElementById("txSubcategoria");
+        document
+          .getElementById("boxNuevaCat")
+          .classList.toggle("d-none", cat !== "NUEVA_CAT");
+        sub.innerHTML =
+          '<option value="">(Ninguna)</option><option value="NUEVA_SUB" class="fw-bold text-primary">➕ NUEVA SUB.</option>';
+        if (cat && catalogos.relacion[cat]) {
+          catalogos.relacion[cat]
+            .sort()
+            .forEach((s) => sub.add(new Option(s, s)));
         }
-      } catch (err) {
-        mostrarAlertaReg('Error: ' + err.message, 'danger');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = idEnEdicion ? 'Confirmar Cambios' : 'Guardar Transacción';
+        document.getElementById("boxNuevaSub").classList.add("d-none");
       }
-    });
 
-    // Subvista B: Transferencia
-    function chequearMonedasTr() {
-      const c1 = document.getElementById('trOrigen').value;
-      const c2 = document.getElementById('trDestino').value;
-      if (!c1 || !c2) return;
-      const m1 = catalogos.mapaCuentas[c1] || 'COP';
-      const m2 = catalogos.mapaCuentas[c2] || 'COP';
-      document.getElementById('lblMontoOrigen').textContent = `Monto a Retirar (${m1})`;
-      if (m1 !== m2) {
-        document.getElementById('boxMontoDestino').classList.remove('d-none');
-        document.getElementById('lblMontoDestino').textContent = `Monto a Recibir (${m2})`;
-      } else {
-        document.getElementById('boxMontoDestino').classList.add('d-none');
+      document
+        .getElementById("txTipo")
+        .addEventListener("change", filtrarCategoriasSimple);
+      document
+        .getElementById("txCategoria")
+        .addEventListener("change", filtrarSubSimple);
+      document
+        .getElementById("txSubcategoria")
+        .addEventListener("change", (e) => {
+          document
+            .getElementById("boxNuevaSub")
+            .classList.toggle("d-none", e.target.value !== "NUEVA_SUB");
+        });
+      document.getElementById("txCuenta").addEventListener("change", (e) => {
+        document.getElementById("txMonedaBadge").textContent =
+          catalogos.mapaCuentas[e.target.value] || "COP";
+        cargarSugerenciasBen();
+      });
+
+      async function cargarSugerenciasBen() {
+        if (idEnEdicion) return;
+        const ben = document.getElementById("txBeneficiario").value;
+        const cuenta = document.getElementById("txCuenta").value;
+        document
+          .getElementById("boxNuevoBen")
+          .classList.toggle("d-none", ben !== "NUEVO");
+
+        const boxSug = document.getElementById("boxSugerencias");
+        const lista = document.getElementById("listaSugerencias");
+        if (!ben || ben === "NUEVO") {
+          boxSug.classList.add("d-none");
+          return;
+        }
+
+        const resultados = await obtenerSugerenciasBeneficiarioWeb(ben, cuenta);
+        if (resultados.length === 0) {
+          boxSug.classList.add("d-none");
+          return;
+        }
+
+        lista.innerHTML = "";
+        resultados.forEach((res) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "btn btn-sm btn-light border text-start";
+          b.innerHTML = `<strong>${res.fecha}</strong>: ${res.cuenta} | $${res.monto} <small class="text-muted">(${res.categoria})</small>`;
+          b.onclick = () => {
+            document.getElementById("txTipo").value = res.tipo;
+            filtrarCategoriasSimple();
+            document.getElementById("txCuenta").value = res.cuenta;
+            document.getElementById("txMonedaBadge").textContent =
+              catalogos.mapaCuentas[res.cuenta] || "COP";
+            document.getElementById("txMonto").value = res.monto;
+            document.getElementById("txMemo").value = res.memo;
+            document.getElementById("txCategoria").value = res.categoria;
+            filtrarSubSimple();
+            document.getElementById("txSubcategoria").value = res.subcategoria;
+            boxSug.classList.add("d-none");
+          };
+          lista.appendChild(b);
+        });
+        boxSug.classList.remove("d-none");
       }
-    }
-    document.getElementById('trOrigen').addEventListener('change', chequearMonedasTr);
-    document.getElementById('trDestino').addEventListener('change', chequearMonedasTr);
+      document
+        .getElementById("txBeneficiario")
+        .addEventListener("change", cargarSugerenciasBen);
 
-    document.getElementById('formTransferencia').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const c1 = document.getElementById('trOrigen').value;
-      const c2 = document.getElementById('trDestino').value;
-      if (c1 === c2) return mostrarAlertaReg('Origen y destino no pueden ser iguales.', 'warning');
+      document
+        .getElementById("formSimple")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const btn = document.getElementById("btnGuardarSimple");
+          btn.disabled = true;
+          btn.textContent = "⏳ Guardando...";
 
-      const btn = document.getElementById('btnGuardarTr');
-      btn.disabled = true;
-      btn.textContent = '⏳ Registrando...';
+          try {
+            const ben = document.getElementById("txBeneficiario").value;
+            const cat = document.getElementById("txCategoria").value;
+            const sub = document.getElementById("txSubcategoria").value;
+            const estabaEditando = Boolean(idEnEdicion);
 
-      try {
-        const m1 = catalogos.mapaCuentas[c1] || 'COP';
-        const m2 = catalogos.mapaCuentas[c2] || 'COP';
-        const montoOr = document.getElementById('trMontoOrigen').value;
-        const montoDes = (m1 === m2) ? montoOr : document.getElementById('trMontoDestino').value;
-        const estabaEditando = Boolean(idEnEdicion);
+            const msg = await guardarMovimientoWeb({
+              id: idEnEdicion || "",
+              fecha: document.getElementById("txFecha").value,
+              beneficiario:
+                ben === "NUEVO"
+                  ? document.getElementById("txNuevoBen").value.trim()
+                  : ben,
+              tipo: document.getElementById("txTipo").value,
+              cuenta: document.getElementById("txCuenta").value,
+              moneda: document.getElementById("txMonedaBadge").textContent,
+              monto: document.getElementById("txMonto").value,
+              categoria:
+                cat === "NUEVA_CAT"
+                  ? document.getElementById("txNuevaCat").value.trim()
+                  : cat,
+              subcategoria:
+                sub === "NUEVA_SUB"
+                  ? document.getElementById("txNuevaSub").value.trim()
+                  : sub,
+              memo: document.getElementById("txMemo").value.trim(),
+            });
 
-        const msg = await guardarMovimientoWeb({
-          id: idEnEdicion || '',
-          fecha: document.getElementById('trFecha').value,
-          cuentaOrigen: c1,
-          monedaOrigen: m1,
-          montoOrigen: montoOr,
-          cuentaDestino: c2,
-          monedaDestino: m2,
-          montoDestino: montoDes,
-          nota: document.getElementById('trNota').value.trim()
+            document.getElementById("txMonto").value = "";
+            document.getElementById("txMemo").value = "";
+            salirModoEdicion();
+
+            if (estabaEditando) {
+              await activarVista("historial");
+              await ejecutarBusquedaHistorial();
+            } else {
+              mostrarAlertaReg(msg, "success");
+            }
+          } catch (err) {
+            mostrarAlertaReg("Error: " + err.message, "danger");
+          } finally {
+            btn.disabled = false;
+            btn.textContent = idEnEdicion
+              ? "Confirmar Cambios"
+              : "Guardar Transacción";
+          }
         });
 
-        document.getElementById('trMontoOrigen').value = '';
-        document.getElementById('trMontoDestino').value = '';
-        document.getElementById('trNota').value = '';
-        salirModoEdicion();
-
-        if (estabaEditando) {
-          await activarVista('historial');
-          await ejecutarBusquedaHistorial();
+      // Subvista B: Transferencia
+      function chequearMonedasTr() {
+        const c1 = document.getElementById("trOrigen").value;
+        const c2 = document.getElementById("trDestino").value;
+        if (!c1 || !c2) return;
+        const m1 = catalogos.mapaCuentas[c1] || "COP";
+        const m2 = catalogos.mapaCuentas[c2] || "COP";
+        document.getElementById("lblMontoOrigen").textContent =
+          `Monto a Retirar (${m1})`;
+        if (m1 !== m2) {
+          document.getElementById("boxMontoDestino").classList.remove("d-none");
+          document.getElementById("lblMontoDestino").textContent =
+            `Monto a Recibir (${m2})`;
         } else {
-          mostrarAlertaReg(msg, 'success');
+          document.getElementById("boxMontoDestino").classList.add("d-none");
         }
-      } catch (err) {
-        mostrarAlertaReg('Error: ' + err.message, 'danger');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = idEnEdicion ? 'Confirmar Cambios' : 'Registrar Transferencia';
       }
-    });
+      document
+        .getElementById("trOrigen")
+        .addEventListener("change", chequearMonedasTr);
+      document
+        .getElementById("trDestino")
+        .addEventListener("change", chequearMonedasTr);
 
-    // Subvista C: Asiento Compuesto
-    document.getElementById('cmpCuenta').addEventListener('change', (e) => {
-      document.getElementById('cmpMoneda').value = catalogos.mapaCuentas[e.target.value] || '';
-      validarCuadreCompuesto();
-    });
-    document.getElementById('cmpTipo').addEventListener('change', () => {
-      const tipo = document.getElementById('cmpTipo').value;
-      const inp = document.getElementById('cmpMontoRef');
-      const val = parseFloat(inp.value);
-      if (!isNaN(val) && val !== 0) inp.value = (tipo === 'GASTO') ? -Math.abs(val) : Math.abs(val);
-      validarCuadreCompuesto();
-    });
-    document.getElementById('cmpMontoRef').addEventListener('input', validarCuadreCompuesto);
+      document
+        .getElementById("formTransferencia")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const c1 = document.getElementById("trOrigen").value;
+          const c2 = document.getElementById("trDestino").value;
+          if (c1 === c2)
+            return mostrarAlertaReg(
+              "Origen y destino no pueden ser iguales.",
+              "warning",
+            );
 
-    function agregarPartidaCompuesta(datosP = null) {
-      const id = Date.now() + Math.floor(Math.random() * 1000);
-      const optsBen = catalogos.beneficiarios.map(b => `<option value="${b}">${b}</option>`).join('');
-      const optsCuentas = catalogos.cuentas.map(c => `<option value="${c}">${c}</option>`).join('');
+          const btn = document.getElementById("btnGuardarTr");
+          btn.disabled = true;
+          btn.textContent = "⏳ Registrando...";
 
-      const html = `
+          try {
+            const m1 = catalogos.mapaCuentas[c1] || "COP";
+            const m2 = catalogos.mapaCuentas[c2] || "COP";
+            const montoOr = document.getElementById("trMontoOrigen").value;
+            const montoDes =
+              m1 === m2
+                ? montoOr
+                : document.getElementById("trMontoDestino").value;
+            const estabaEditando = Boolean(idEnEdicion);
+
+            const msg = await guardarMovimientoWeb({
+              id: idEnEdicion || "",
+              fecha: document.getElementById("trFecha").value,
+              cuentaOrigen: c1,
+              monedaOrigen: m1,
+              montoOrigen: montoOr,
+              cuentaDestino: c2,
+              monedaDestino: m2,
+              montoDestino: montoDes,
+              nota: document.getElementById("trNota").value.trim(),
+            });
+
+            document.getElementById("trMontoOrigen").value = "";
+            document.getElementById("trMontoDestino").value = "";
+            document.getElementById("trNota").value = "";
+            salirModoEdicion();
+
+            if (estabaEditando) {
+              await activarVista("historial");
+              await ejecutarBusquedaHistorial();
+            } else {
+              mostrarAlertaReg(msg, "success");
+            }
+          } catch (err) {
+            mostrarAlertaReg("Error: " + err.message, "danger");
+          } finally {
+            btn.disabled = false;
+            btn.textContent = idEnEdicion
+              ? "Confirmar Cambios"
+              : "Registrar Transferencia";
+          }
+        });
+
+      // Subvista C: Asiento Compuesto
+      document.getElementById("cmpCuenta").addEventListener("change", (e) => {
+        document.getElementById("cmpMoneda").value =
+          catalogos.mapaCuentas[e.target.value] || "";
+        validarCuadreCompuesto();
+      });
+      document.getElementById("cmpTipo").addEventListener("change", () => {
+        const tipo = document.getElementById("cmpTipo").value;
+        const inp = document.getElementById("cmpMontoRef");
+        const val = parseFloat(inp.value);
+        if (!isNaN(val) && val !== 0)
+          inp.value = tipo === "GASTO" ? -Math.abs(val) : Math.abs(val);
+        validarCuadreCompuesto();
+      });
+      document
+        .getElementById("cmpMontoRef")
+        .addEventListener("input", validarCuadreCompuesto);
+
+      function agregarPartidaCompuesta(datosP = null) {
+        const id = Date.now() + Math.floor(Math.random() * 1000);
+        const optsBen = catalogos.beneficiarios
+          .map((b) => `<option value="${b}">${b}</option>`)
+          .join("");
+        const optsCuentas = catalogos.cuentas
+          .map((c) => `<option value="${c}">${c}</option>`)
+          .join("");
+
+        const html = `
         <div class="card partida-card p-3 bg-light shadow-sm" id="p-${id}">
           <button type="button" class="btn btn-danger btn-del-partida" data-del="${id}">×</button>
           <div class="row g-2 mb-2">
@@ -995,295 +1572,373 @@ import {
           </div>
         </div>`;
 
-      document.getElementById('contenedorPartidas').insertAdjacentHTML('beforeend', html);
-      const card = document.getElementById(`p-${id}`);
-      const selTipo = card.querySelector('.p-tipo');
-      const selCat = card.querySelector('.p-cat');
-      const selSub = card.querySelector('.p-sub');
+        document
+          .getElementById("contenedorPartidas")
+          .insertAdjacentHTML("beforeend", html);
+        const card = document.getElementById(`p-${id}`);
+        const selTipo = card.querySelector(".p-tipo");
+        const selCat = card.querySelector(".p-cat");
+        const selSub = card.querySelector(".p-sub");
 
-      function refrescarCatsPartida() {
-        const t = selTipo.value;
-        card.classList.remove('ingreso', 'transf');
-        if (t === 'INGRESO') card.classList.add('ingreso');
-        if (t === 'TRANSFERENCIA') card.classList.add('transf');
+        function refrescarCatsPartida() {
+          const t = selTipo.value;
+          card.classList.remove("ingreso", "transf");
+          if (t === "INGRESO") card.classList.add("ingreso");
+          if (t === "TRANSFERENCIA") card.classList.add("transf");
 
-        card.querySelector('.p-bloque-cat').classList.toggle('d-none', t === 'TRANSFERENCIA');
-        card.querySelector('.p-bloque-tr').classList.toggle('d-none', t !== 'TRANSFERENCIA');
+          card
+            .querySelector(".p-bloque-cat")
+            .classList.toggle("d-none", t === "TRANSFERENCIA");
+          card
+            .querySelector(".p-bloque-tr")
+            .classList.toggle("d-none", t !== "TRANSFERENCIA");
 
-        if (t !== 'TRANSFERENCIA') {
-          const target = t === 'INGRESO' ? 'Ingreso' : 'Gasto';
-          selCat.innerHTML = '<option value="">-- Sel --</option>';
-          Object.keys(catalogos.relacion).sort().forEach(c => {
-            if ((catalogos.tiposCat[c] || '').toLowerCase().includes(target.toLowerCase())) {
-              selCat.add(new Option(c, c));
-            }
-          });
-          selSub.innerHTML = '<option value="">--</option>';
-        }
-        validarCuadreCompuesto();
-      }
-
-      selTipo.addEventListener('change', refrescarCatsPartida);
-      selCat.addEventListener('change', () => {
-        selSub.innerHTML = '<option value="">--</option>';
-        if (catalogos.relacion[selCat.value]) {
-          catalogos.relacion[selCat.value].sort().forEach(s => selSub.add(new Option(s, s)));
-        }
-      });
-      card.querySelector('.p-monto').addEventListener('input', validarCuadreCompuesto);
-      card.querySelector('[data-del]').addEventListener('click', () => {
-        if (document.querySelectorAll('.partida-card').length > 1) {
-          card.remove();
+          if (t !== "TRANSFERENCIA") {
+            const target = t === "INGRESO" ? "Ingreso" : "Gasto";
+            selCat.innerHTML = '<option value="">-- Sel --</option>';
+            Object.keys(catalogos.relacion)
+              .sort()
+              .forEach((c) => {
+                if (
+                  (catalogos.tiposCat[c] || "")
+                    .toLowerCase()
+                    .includes(target.toLowerCase())
+                ) {
+                  selCat.add(new Option(c, c));
+                }
+              });
+            selSub.innerHTML = '<option value="">--</option>';
+          }
           validarCuadreCompuesto();
         }
-      });
 
-      refrescarCatsPartida();
-
-      if (datosP) {
-        let tipoNorm = (datosP.tipo || 'GASTO').toUpperCase();
-        if (tipoNorm === 'EGRESO') tipoNorm = 'GASTO';
-        selTipo.value = tipoNorm;
-        refrescarCatsPartida();
-        if (datosP.beneficiario) card.querySelector('.p-ben').value = datosP.beneficiario;
-        if (tipoNorm === 'TRANSFERENCIA') {
-          card.querySelector('.p-dest').value = datosP.cuentaDestino || '';
-          if (datosP.montoDivisa) card.querySelector('.p-divisa').value = Math.abs(datosP.montoDivisa);
-        } else {
-          selCat.value = datosP.categoria || '';
-          selCat.dispatchEvent(new Event('change'));
-          selSub.value = datosP.subcategoria || '';
-        }
-        card.querySelector('.p-memo').value = datosP.memo || '';
-        card.querySelector('.p-monto').value = Math.abs(parseFloat(datosP.monto) || 0);
-        validarCuadreCompuesto();
-      }
-    }
-
-    document.getElementById('btnAddPartida').addEventListener('click', () => agregarPartidaCompuesta());
-
-    function validarCuadreCompuesto() {
-      const tipoCab = document.getElementById('cmpTipo').value;
-      const rawRef = parseFloat(document.getElementById('cmpMontoRef').value) || 0;
-      const ref = (tipoCab === 'GASTO') ? -Math.abs(rawRef) : Math.abs(rawRef);
-      if (rawRef !== 0 && rawRef !== ref) document.getElementById('cmpMontoRef').value = ref;
-
-      const totalPartidas = Array.from(document.querySelectorAll('.partida-card')).reduce((acc, card) => {
-        const t = card.querySelector('.p-tipo').value;
-        const val = Math.abs(parseFloat(card.querySelector('.p-monto').value)) || 0;
-        return acc + (t === 'INGRESO' ? val : -val);
-      }, 0);
-
-      const dif = (ref - totalPartidas).toFixed(2);
-      const box = document.getElementById('boxCuadre');
-      box.textContent = `Diferencia: $${dif}`;
-      const ok = Math.abs(parseFloat(dif)) < 0.01 && ref !== 0;
-      box.className = ok ? 'alert alert-success text-end fw-bold py-2 mb-3' : 'alert alert-danger text-end fw-bold py-2 mb-3';
-      document.getElementById('btnGuardarCompuesto').disabled = !ok;
-    }
-
-    document.getElementById('btnGuardarCompuesto').addEventListener('click', async () => {
-      const btn = document.getElementById('btnGuardarCompuesto');
-      btn.disabled = true;
-      btn.textContent = '⏳ Guardando...';
-
-      try {
-        const benPrincipal = document.getElementById('cmpBen').value;
-        const estabaEditando = Boolean(idEnEdicion);
-        const cabecera = {
-          fecha: document.getElementById('cmpFecha').value,
-          tipoCabecera: document.getElementById('cmpTipo').value,
-          beneficiario: benPrincipal,
-          cuenta: document.getElementById('cmpCuenta').value,
-          moneda: document.getElementById('cmpMoneda').value,
-          montoReferencia: document.getElementById('cmpMontoRef').value
-        };
-
-        const partidas = Array.from(document.querySelectorAll('.partida-card')).map(card => {
-          const tipo = card.querySelector('.p-tipo').value;
-          const benEsp = card.querySelector('.p-ben').value;
-          const p = {
-            tipo,
-            beneficiario: (benEsp && benEsp !== benPrincipal) ? benEsp : '',
-            memo: card.querySelector('.p-memo').value.trim(),
-            monto: card.querySelector('.p-monto').value
-          };
-          if (tipo === 'TRANSFERENCIA') {
-            p.cuentaDestino = card.querySelector('.p-dest').value;
-            p.monedaDestino = catalogos.mapaCuentas[p.cuentaDestino] || cabecera.moneda;
-            p.montoDivisa = card.querySelector('.p-divisa').value;
-          } else {
-            p.categoria = card.querySelector('.p-cat').value;
-            p.subcategoria = card.querySelector('.p-sub').value;
+        selTipo.addEventListener("change", refrescarCatsPartida);
+        selCat.addEventListener("change", () => {
+          selSub.innerHTML = '<option value="">--</option>';
+          if (catalogos.relacion[selCat.value]) {
+            catalogos.relacion[selCat.value]
+              .sort()
+              .forEach((s) => selSub.add(new Option(s, s)));
           }
-          return p;
+        });
+        card
+          .querySelector(".p-monto")
+          .addEventListener("input", validarCuadreCompuesto);
+        card.querySelector("[data-del]").addEventListener("click", () => {
+          if (document.querySelectorAll(".partida-card").length > 1) {
+            card.remove();
+            validarCuadreCompuesto();
+          }
         });
 
-        const msg = await guardarMovimientoWeb({ id: idEnEdicion || '', cabecera, partidas });
-        document.getElementById('contenedorPartidas').innerHTML = '';
-        document.getElementById('cmpMontoRef').value = '';
-        agregarPartidaCompuesta();
-        validarCuadreCompuesto();
-        salirModoEdicion();
+        refrescarCatsPartida();
 
-        if (estabaEditando) {
-          await activarVista('historial');
-          await ejecutarBusquedaHistorial();
-        } else {
-          mostrarAlertaReg(msg, 'success');
+        if (datosP) {
+          let tipoNorm = (datosP.tipo || "GASTO").toUpperCase();
+          if (tipoNorm === "EGRESO") tipoNorm = "GASTO";
+          selTipo.value = tipoNorm;
+          refrescarCatsPartida();
+          if (datosP.beneficiario)
+            card.querySelector(".p-ben").value = datosP.beneficiario;
+          if (tipoNorm === "TRANSFERENCIA") {
+            card.querySelector(".p-dest").value = datosP.cuentaDestino || "";
+            if (datosP.montoDivisa)
+              card.querySelector(".p-divisa").value = Math.abs(
+                datosP.montoDivisa,
+              );
+          } else {
+            selCat.value = datosP.categoria || "";
+            selCat.dispatchEvent(new Event("change"));
+            selSub.value = datosP.subcategoria || "";
+          }
+          card.querySelector(".p-memo").value = datosP.memo || "";
+          card.querySelector(".p-monto").value = Math.abs(
+            parseFloat(datosP.monto) || 0,
+          );
+          validarCuadreCompuesto();
         }
-      } catch (err) {
-        mostrarAlertaReg('Error: ' + err.message, 'danger');
-      } finally {
-        btn.textContent = idEnEdicion ? 'Actualizar Asiento' : 'Guardar Asiento Compuesto';
-      }
-    });
-
-    // Plantillas
-    async function refrescarPlantillas() {
-      const nombres = await obtenerPlantillasWeb();
-      const sel = document.getElementById('selPlantillas');
-      sel.innerHTML = '<option value="">-- Mis Plantillas --</option>';
-      nombres.forEach(n => sel.add(new Option(n, n)));
-    }
-    document.getElementById('btnCargarPlantilla').addEventListener('click', async () => {
-      const nombre = document.getElementById('selPlantillas').value;
-      if (!nombre) return;
-      const datos = await cargarPlantillaWeb(nombre);
-      if (!datos) return;
-      if (datos.cabecera) {
-        if (datos.cabecera.tipoCabecera) document.getElementById('cmpTipo').value = datos.cabecera.tipoCabecera;
-        document.getElementById('cmpBen').value = datos.cabecera.beneficiario || '';
-        document.getElementById('cmpCuenta').value = datos.cabecera.cuenta || '';
-        document.getElementById('cmpMoneda').value = datos.cabecera.moneda || '';
-        document.getElementById('cmpMontoRef').value = datos.cabecera.montoReferencia || '';
-      }
-      document.getElementById('contenedorPartidas').innerHTML = '';
-      (datos.partidas || []).forEach(p => agregarPartidaCompuesta(p));
-      validarCuadreCompuesto();
-    });
-    document.getElementById('btnGuardarPlantilla').addEventListener('click', async () => {
-      const nombre = document.getElementById('txtNombrePlantilla').value.trim();
-      if (!nombre) return mostrarAlertaReg('Escribe un nombre para la plantilla.', 'warning');
-      const cabecera = {
-        tipoCabecera: document.getElementById('cmpTipo').value,
-        beneficiario: document.getElementById('cmpBen').value,
-        cuenta: document.getElementById('cmpCuenta').value,
-        moneda: document.getElementById('cmpMoneda').value,
-        montoReferencia: document.getElementById('cmpMontoRef').value
-      };
-      const partidas = Array.from(document.querySelectorAll('.partida-card')).map(card => ({
-        tipo: card.querySelector('.p-tipo').value,
-        beneficiario: card.querySelector('.p-ben').value,
-        categoria: card.querySelector('.p-cat').value,
-        subcategoria: card.querySelector('.p-sub').value,
-        cuentaDestino: card.querySelector('.p-dest').value,
-        montoDivisa: card.querySelector('.p-divisa').value,
-        memo: card.querySelector('.p-memo').value,
-        monto: card.querySelector('.p-monto').value
-      }));
-      const msg = await guardarPlantillaWeb(nombre, { cabecera, partidas });
-      mostrarAlertaReg(msg, 'success');
-      document.getElementById('txtNombrePlantilla').value = '';
-      await refrescarPlantillas();
-    });
-    document.getElementById('btnBorrarPlantilla').addEventListener('click', async () => {
-      const nombre = document.getElementById('selPlantillas').value;
-      if (!nombre || !confirm(`¿Eliminar la plantilla "${nombre}"?`)) return;
-      const msg = await eliminarPlantillaWeb(nombre);
-      mostrarAlertaReg(msg, 'info');
-      await refrescarPlantillas();
-    });
-
-    // --- VISTA 3: HISTORIAL Y CONCILIACIÓN ---
-    const chkModoConc = document.getElementById('chkModoConciliacion');
-    const panelConc = document.getElementById('panelConciliacion');
-
-    chkModoConc.addEventListener('change', () => {
-      const cuenta = document.getElementById('histCuenta').value;
-      const desde = document.getElementById('histDesde').value;
-      const hasta = document.getElementById('histHasta').value;
-
-      if (chkModoConc.checked && (!cuenta || !desde || !hasta)) {
-        alert('⚠️ El Modo Conciliación requiere seleccionar: Cuenta, Fecha Desde y Fecha Hasta.');
-        chkModoConc.checked = false;
-        return;
       }
 
-      panelConc.classList.toggle('d-none', !chkModoConc.checked);
-      document.getElementById('chkMarcarTodos').checked = false;
-      ejecutarBusquedaHistorial();
-    });
+      document
+        .getElementById("btnAddPartida")
+        .addEventListener("click", () => agregarPartidaCompuesta());
 
-    async function ejecutarBusquedaHistorial() {
-      const modoConc = chkModoConc.checked;
-      const filtros = {
-        inicio: document.getElementById('histDesde').value,
-        fin: document.getElementById('histHasta').value,
-        cuenta: document.getElementById('histCuenta').value,
-        beneficiario: document.getElementById('histBen').value,
-        categoria: document.getElementById('histCat').value
-      };
+      function validarCuadreCompuesto() {
+        const tipoCab = document.getElementById("cmpTipo").value;
+        const rawRef =
+          parseFloat(document.getElementById("cmpMontoRef").value) || 0;
+        const ref = tipoCab === "GASTO" ? -Math.abs(rawRef) : Math.abs(rawRef);
+        if (rawRef !== 0 && rawRef !== ref)
+          document.getElementById("cmpMontoRef").value = ref;
 
-      if (modoConc && (!filtros.cuenta || !filtros.inicio || !filtros.fin)) {
-        alert('⚠️ El Modo Conciliación requiere seleccionar: Cuenta, Fecha Desde y Fecha Hasta.');
-        return;
+        const totalPartidas = Array.from(
+          document.querySelectorAll(".partida-card"),
+        ).reduce((acc, card) => {
+          const t = card.querySelector(".p-tipo").value;
+          const val =
+            Math.abs(parseFloat(card.querySelector(".p-monto").value)) || 0;
+          return acc + (t === "INGRESO" ? val : -val);
+        }, 0);
+
+        const dif = (ref - totalPartidas).toFixed(2);
+        const box = document.getElementById("boxCuadre");
+        box.textContent = `Diferencia: $${dif}`;
+        const ok = Math.abs(parseFloat(dif)) < 0.01 && ref !== 0;
+        box.className = ok
+          ? "alert alert-success text-end fw-bold py-2 mb-3"
+          : "alert alert-danger text-end fw-bold py-2 mb-3";
+        document.getElementById("btnGuardarCompuesto").disabled = !ok;
       }
 
-      const listaDiv = document.getElementById('listaHistorial');
-      listaDiv.innerHTML = '<div class="text-center text-muted py-4">🔍 Buscando registros...</div>';
+      document
+        .getElementById("btnGuardarCompuesto")
+        .addEventListener("click", async () => {
+          const btn = document.getElementById("btnGuardarCompuesto");
+          btn.disabled = true;
+          btn.textContent = "⏳ Guardando...";
 
-      try {
-        movimientosHistorial = await buscarHistorialWeb(filtros);
+          try {
+            const benPrincipal = document.getElementById("cmpBen").value;
+            const estabaEditando = Boolean(idEnEdicion);
+            const cabecera = {
+              fecha: document.getElementById("cmpFecha").value,
+              tipoCabecera: document.getElementById("cmpTipo").value,
+              beneficiario: benPrincipal,
+              cuenta: document.getElementById("cmpCuenta").value,
+              moneda: document.getElementById("cmpMoneda").value,
+              montoReferencia: document.getElementById("cmpMontoRef").value,
+            };
 
-        if (movimientosHistorial.length === 0) {
-          listaDiv.innerHTML = '<div class="text-center text-muted py-4">Sin resultados para los filtros aplicados.</div>';
-          if (modoConc) await actualizarPanelConciliacion();
+            const partidas = Array.from(
+              document.querySelectorAll(".partida-card"),
+            ).map((card) => {
+              const tipo = card.querySelector(".p-tipo").value;
+              const benEsp = card.querySelector(".p-ben").value;
+              const p = {
+                tipo,
+                beneficiario: benEsp && benEsp !== benPrincipal ? benEsp : "",
+                memo: card.querySelector(".p-memo").value.trim(),
+                monto: card.querySelector(".p-monto").value,
+              };
+              if (tipo === "TRANSFERENCIA") {
+                p.cuentaDestino = card.querySelector(".p-dest").value;
+                p.monedaDestino =
+                  catalogos.mapaCuentas[p.cuentaDestino] || cabecera.moneda;
+                p.montoDivisa = card.querySelector(".p-divisa").value;
+              } else {
+                p.categoria = card.querySelector(".p-cat").value;
+                p.subcategoria = card.querySelector(".p-sub").value;
+              }
+              return p;
+            });
+
+            const msg = await guardarMovimientoWeb({
+              id: idEnEdicion || "",
+              cabecera,
+              partidas,
+            });
+            document.getElementById("contenedorPartidas").innerHTML = "";
+            document.getElementById("cmpMontoRef").value = "";
+            agregarPartidaCompuesta();
+            validarCuadreCompuesto();
+            salirModoEdicion();
+
+            if (estabaEditando) {
+              await activarVista("historial");
+              await ejecutarBusquedaHistorial();
+            } else {
+              mostrarAlertaReg(msg, "success");
+            }
+          } catch (err) {
+            mostrarAlertaReg("Error: " + err.message, "danger");
+          } finally {
+            btn.textContent = idEnEdicion
+              ? "Actualizar Asiento"
+              : "Guardar Asiento Compuesto";
+          }
+        });
+
+      // Plantillas
+      async function refrescarPlantillas() {
+        const nombres = await obtenerPlantillasWeb();
+        const sel = document.getElementById("selPlantillas");
+        sel.innerHTML = '<option value="">-- Mis Plantillas --</option>';
+        nombres.forEach((n) => sel.add(new Option(n, n)));
+      }
+      document
+        .getElementById("btnCargarPlantilla")
+        .addEventListener("click", async () => {
+          const nombre = document.getElementById("selPlantillas").value;
+          if (!nombre) return;
+          const datos = await cargarPlantillaWeb(nombre);
+          if (!datos) return;
+          if (datos.cabecera) {
+            if (datos.cabecera.tipoCabecera)
+              document.getElementById("cmpTipo").value =
+                datos.cabecera.tipoCabecera;
+            document.getElementById("cmpBen").value =
+              datos.cabecera.beneficiario || "";
+            document.getElementById("cmpCuenta").value =
+              datos.cabecera.cuenta || "";
+            document.getElementById("cmpMoneda").value =
+              datos.cabecera.moneda || "";
+            document.getElementById("cmpMontoRef").value =
+              datos.cabecera.montoReferencia || "";
+          }
+          document.getElementById("contenedorPartidas").innerHTML = "";
+          (datos.partidas || []).forEach((p) => agregarPartidaCompuesta(p));
+          validarCuadreCompuesto();
+        });
+      document
+        .getElementById("btnGuardarPlantilla")
+        .addEventListener("click", async () => {
+          const nombre = document
+            .getElementById("txtNombrePlantilla")
+            .value.trim();
+          if (!nombre)
+            return mostrarAlertaReg(
+              "Escribe un nombre para la plantilla.",
+              "warning",
+            );
+          const cabecera = {
+            tipoCabecera: document.getElementById("cmpTipo").value,
+            beneficiario: document.getElementById("cmpBen").value,
+            cuenta: document.getElementById("cmpCuenta").value,
+            moneda: document.getElementById("cmpMoneda").value,
+            montoReferencia: document.getElementById("cmpMontoRef").value,
+          };
+          const partidas = Array.from(
+            document.querySelectorAll(".partida-card"),
+          ).map((card) => ({
+            tipo: card.querySelector(".p-tipo").value,
+            beneficiario: card.querySelector(".p-ben").value,
+            categoria: card.querySelector(".p-cat").value,
+            subcategoria: card.querySelector(".p-sub").value,
+            cuentaDestino: card.querySelector(".p-dest").value,
+            montoDivisa: card.querySelector(".p-divisa").value,
+            memo: card.querySelector(".p-memo").value,
+            monto: card.querySelector(".p-monto").value,
+          }));
+          const msg = await guardarPlantillaWeb(nombre, { cabecera, partidas });
+          mostrarAlertaReg(msg, "success");
+          document.getElementById("txtNombrePlantilla").value = "";
+          await refrescarPlantillas();
+        });
+      document
+        .getElementById("btnBorrarPlantilla")
+        .addEventListener("click", async () => {
+          const nombre = document.getElementById("selPlantillas").value;
+          if (!nombre || !confirm(`¿Eliminar la plantilla "${nombre}"?`))
+            return;
+          const msg = await eliminarPlantillaWeb(nombre);
+          mostrarAlertaReg(msg, "info");
+          await refrescarPlantillas();
+        });
+
+      // --- VISTA 3: HISTORIAL Y CONCILIACIÓN ---
+      const chkModoConc = document.getElementById("chkModoConciliacion");
+      const panelConc = document.getElementById("panelConciliacion");
+
+      chkModoConc.addEventListener("change", () => {
+        const cuenta = document.getElementById("histCuenta").value;
+        const desde = document.getElementById("histDesde").value;
+        const hasta = document.getElementById("histHasta").value;
+
+        if (chkModoConc.checked && (!cuenta || !desde || !hasta)) {
+          alert(
+            "⚠️ El Modo Conciliación requiere seleccionar: Cuenta, Fecha Desde y Fecha Hasta.",
+          );
+          chkModoConc.checked = false;
           return;
         }
 
-        let grupoIdActual = null;
-        let indiceGrupo = 0;
-        listaDiv.innerHTML = '';
+        panelConc.classList.toggle("d-none", !chkModoConc.checked);
+        document.getElementById("chkMarcarTodos").checked = false;
+        ejecutarBusquedaHistorial();
+      });
 
-        movimientosHistorial.forEach((item, index) => {
-          const esTr = item.tipo === 'Transferencia';
-          const esAm = item.memo === 'Asiento Compuesto';
-          const strId = String(item.idTransaccion || '').trim();
-          const esParteDeDesglose = strId.startsWith('2') || strId.startsWith('3');
+      async function ejecutarBusquedaHistorial() {
+        const modoConc = chkModoConc.checked;
+        const filtros = {
+          inicio: document.getElementById("histDesde").value,
+          fin: document.getElementById("histHasta").value,
+          cuenta: document.getElementById("histCuenta").value,
+          beneficiario: document.getElementById("histBen").value,
+          categoria: document.getElementById("histCat").value,
+        };
 
-          if (esParteDeDesglose && item.idTransaccion !== grupoIdActual) {
-            grupoIdActual = item.idTransaccion;
-            indiceGrupo++;
+        if (modoConc && (!filtros.cuenta || !filtros.inicio || !filtros.fin)) {
+          alert(
+            "⚠️ El Modo Conciliación requiere seleccionar: Cuenta, Fecha Desde y Fecha Hasta.",
+          );
+          return;
+        }
+
+        const listaDiv = document.getElementById("listaHistorial");
+        listaDiv.innerHTML =
+          '<div class="text-center text-muted py-4">🔍 Buscando registros...</div>';
+
+        try {
+          movimientosHistorial = await buscarHistorialWeb(filtros);
+
+          if (movimientosHistorial.length === 0) {
+            listaDiv.innerHTML =
+              '<div class="text-center text-muted py-4">Sin resultados para los filtros aplicados.</div>';
+            if (modoConc) await actualizarPanelConciliacion();
+            return;
           }
 
-          let colorFondo = '#ffffff';
-          if (esParteDeDesglose) {
-            colorFondo = (indiceGrupo % 2 === 0) ? '#dbe6f6' : '#ebdbf6';
-          }
+          let grupoIdActual = null;
+          let indiceGrupo = 0;
+          listaDiv.innerHTML = "";
 
-          const colorBorde = esTr ? '#1a73e8' : esAm ? '#9334e6' : (item.monto < 0) ? '#dc3545' : '#198754';
-          const signo = item.monto < 0 ? '-' : '+';
-          const montoTxt = `${signo}${formatearMoneda(Math.abs(item.monto), item.moneda)}`;
-          const textoMontoFinal = esAm ? `** ${montoTxt} **` : montoTxt;
+          movimientosHistorial.forEach((item, index) => {
+            const esTr = item.tipo === "Transferencia";
+            const esAm = item.memo === "Asiento Compuesto";
+            const strId = String(item.idTransaccion || "").trim();
+            const esParteDeDesglose =
+              strId.startsWith("2") || strId.startsWith("3");
 
-          const casillaHTML = modoConc
-            ? `<input type="checkbox" class="form-check-input chk-item-conc" data-idx="${index}" ${item.conciliado ? 'checked' : ''} style="transform: scale(1.3);">`
-            : (item.conciliado ? '<span title="Conciliado">✅</span>' : '<span style="opacity:0.3;" title="No conciliado">⬜</span>');
+            if (esParteDeDesglose && item.idTransaccion !== grupoIdActual) {
+              grupoIdActual = item.idTransaccion;
+              indiceGrupo++;
+            }
 
-          const btnToggle = esAm
-            ? `<button type="button" class="btn btn-sm btn-outline-secondary btn-toggle-hijos" data-padre="${item.idTransaccion}">👁️ Desglose</button>`
-            : '';
+            let colorFondo = "#ffffff";
+            if (esParteDeDesglose) {
+              colorFondo = indiceGrupo % 2 === 0 ? "#dbe6f6" : "#ebdbf6";
+            }
 
-          const card = document.createElement('div');
-          card.className = `card hist-card p-3 shadow-sm ${item.conciliado && modoConc ? 'fila-conciliada' : ''}`;
-          card.style.backgroundColor = colorFondo;
-          card.style.borderLeft = `6px solid ${colorBorde}`;
-          if (esParteDeDesglose && !esAm) {
-            card.dataset.hijoDe = item.idTransaccion;
-          }
+            const colorBorde = esTr
+              ? "#1a73e8"
+              : esAm
+                ? "#9334e6"
+                : item.monto < 0
+                  ? "#dc3545"
+                  : "#198754";
+            const signo = item.monto < 0 ? "-" : "+";
+            const montoTxt = `${signo}${formatearMoneda(Math.abs(item.monto), item.moneda)}`;
+            const textoMontoFinal = esAm ? `** ${montoTxt} **` : montoTxt;
 
-          card.innerHTML = `
+            const casillaHTML = modoConc
+              ? `<input type="checkbox" class="form-check-input chk-item-conc" data-idx="${index}" ${item.conciliado ? "checked" : ""} style="transform: scale(1.3);">`
+              : item.conciliado
+                ? '<span title="Conciliado">✅</span>'
+                : '<span style="opacity:0.3;" title="No conciliado">⬜</span>';
+
+            const btnToggle = esAm
+              ? `<button type="button" class="btn btn-sm btn-outline-secondary btn-toggle-hijos" data-padre="${item.idTransaccion}">👁️ Desglose</button>`
+              : "";
+
+            const card = document.createElement("div");
+            card.className = `card hist-card p-3 shadow-sm ${item.conciliado && modoConc ? "fila-conciliada" : ""}`;
+            card.style.backgroundColor = colorFondo;
+            card.style.borderLeft = `6px solid ${colorBorde}`;
+            if (esParteDeDesglose && !esAm) {
+              card.dataset.hijoDe = item.idTransaccion;
+            }
+
+            card.innerHTML = `
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
               <div class="d-flex align-items-center gap-2">
                 ${casillaHTML}
@@ -1297,8 +1952,8 @@ import {
                     <span class="badge ms-1" style="background:${colorBorde};">${item.tipo}</span>
                   </div>
                   <div class="small text-muted">
-                    <strong>${item.cuenta}</strong> — ${item.categoria || 'Sin categoría'} ${item.subcategoria ? '→ ' + item.subcategoria : ''}
-                    ${item.memo ? `<span class="badge bg-light text-dark border ms-1">${item.memo}</span>` : ''}
+                    <strong>${item.cuenta}</strong> — ${item.categoria || "Sin categoría"} ${item.subcategoria ? "→ " + item.subcategoria : ""}
+                    ${item.memo ? `<span class="badge bg-light text-dark border ms-1">${item.memo}</span>` : ""}
                   </div>
                 </div>
               </div>
@@ -1307,215 +1962,269 @@ import {
               </div>
             </div>`;
 
-          listaDiv.appendChild(card);
-        });
-
-        // Eventos delegados de tarjetas
-        listaDiv.querySelectorAll('.chk-item-conc').forEach(chk => {
-          chk.addEventListener('change', () => {
-            const idx = parseInt(chk.dataset.idx, 10);
-            movimientosHistorial[idx].conciliado = chk.checked;
-            chk.closest('.hist-card').classList.toggle('fila-conciliada', chk.checked);
-            recalcularTotalesConciliacion();
+            listaDiv.appendChild(card);
           });
-        });
 
-        listaDiv.querySelectorAll('.btn-toggle-hijos').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const padre = btn.dataset.padre;
-            const hijos = listaDiv.querySelectorAll(`[data-hijo-de="${padre}"]`);
-            if (hijos.length === 0) return;
-            const ocultos = hijos[0].classList.contains('d-none');
-            hijos.forEach(h => h.classList.toggle('d-none', !ocultos));
-            btn.textContent = ocultos ? '👁️ Desglose' : '🙈 Oculto';
+          // Eventos delegados de tarjetas
+          listaDiv.querySelectorAll(".chk-item-conc").forEach((chk) => {
+            chk.addEventListener("change", () => {
+              const idx = parseInt(chk.dataset.idx, 10);
+              movimientosHistorial[idx].conciliado = chk.checked;
+              chk
+                .closest(".hist-card")
+                .classList.toggle("fila-conciliada", chk.checked);
+              recalcularTotalesConciliacion();
+            });
           });
-        });
 
-        listaDiv.querySelectorAll('.btn-borrar-tx').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const idTx = btn.dataset.idtx;
-            if (!confirm(`¿Eliminar por completo la transacción ${idTx}?`)) return;
-            await eliminarMovimientoWeb(idTx);
-            await ejecutarBusquedaHistorial();
+          listaDiv.querySelectorAll(".btn-toggle-hijos").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const padre = btn.dataset.padre;
+              const hijos = listaDiv.querySelectorAll(
+                `[data-hijo-de="${padre}"]`,
+              );
+              if (hijos.length === 0) return;
+              const ocultos = hijos[0].classList.contains("d-none");
+              hijos.forEach((h) => h.classList.toggle("d-none", !ocultos));
+              btn.textContent = ocultos ? "👁️ Desglose" : "🙈 Oculto";
+            });
           });
-        });
 
-        listaDiv.querySelectorAll('.btn-editar-tx').forEach(btn => {
-          btn.addEventListener('click', () => abrirEditorEnWeb(btn.dataset.idtx));
-        });
+          listaDiv.querySelectorAll(".btn-borrar-tx").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+              const idTx = btn.dataset.idtx;
+              if (!confirm(`¿Eliminar por completo la transacción ${idTx}?`))
+                return;
+              await eliminarMovimientoWeb(idTx);
+              await ejecutarBusquedaHistorial();
+            });
+          });
 
-        if (modoConc) await actualizarPanelConciliacion();
-      } catch (err) {
-        listaDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
-      }
-    }
+          listaDiv.querySelectorAll(".btn-editar-tx").forEach((btn) => {
+            btn.addEventListener("click", () =>
+              abrirEditorEnWeb(btn.dataset.idtx),
+            );
+          });
 
-    document.getElementById('btnBuscarHist').addEventListener('click', ejecutarBusquedaHistorial);
-
-    async function actualizarPanelConciliacion() {
-      const cuenta = document.getElementById('histCuenta').value;
-      const desde = document.getElementById('histDesde').value;
-      const hasta = document.getElementById('histHasta').value;
-      if (!cuenta || !desde || !hasta) return;
-
-      const moneda = catalogos.mapaCuentas[cuenta] || 'COP';
-      const saldos = await obtenerSaldosConciliacionWeb(cuenta, desde, hasta);
-      saldoFinalSistemaNum = saldos.final;
-
-      document.getElementById('concSaldoInicial').textContent = formatearMoneda(saldos.inicial, moneda);
-      document.getElementById('concSaldoFinal').textContent = formatearMoneda(saldos.final, moneda);
-      recalcularTotalesConciliacion();
-    }
-
-    function recalcularTotalesConciliacion() {
-      const cuenta = document.getElementById('histCuenta').value;
-      const moneda = catalogos.mapaCuentas[cuenta] || 'COP';
-      const saldoBanco = parseFloat(document.getElementById('concSaldoBanco').value) || 0;
-      const dif = saldoFinalSistemaNum - saldoBanco;
-
-      const elDif = document.getElementById('concDiferencia');
-      elDif.textContent = formatearMoneda(dif, moneda);
-      elDif.className = Math.abs(dif) < 0.01 ? 'fw-bold fs-5 text-success' : 'fw-bold fs-5 text-danger';
-
-      const sumaMarcados = movimientosHistorial
-        .filter(m => m.conciliado)
-        .reduce((acc, m) => acc + m.monto, 0);
-      document.getElementById('concSumaMarcados').textContent = formatearMoneda(sumaMarcados, moneda);
-    }
-
-    document.getElementById('concSaldoBanco').addEventListener('input', recalcularTotalesConciliacion);
-
-    document.getElementById('chkMarcarTodos').addEventListener('change', (e) => {
-      const marcado = e.target.checked;
-      document.querySelectorAll('.chk-item-conc').forEach(chk => {
-        chk.checked = marcado;
-        const idx = parseInt(chk.dataset.idx, 10);
-        movimientosHistorial[idx].conciliado = marcado;
-        chk.closest('.hist-card').classList.toggle('fila-conciliada', marcado);
-      });
-      recalcularTotalesConciliacion();
-    });
-
-    document.getElementById('btnGuardarConc').addEventListener('click', async () => {
-      const btn = document.getElementById('btnGuardarConc');
-      const cambios = movimientosHistorial.map(m => ({ idFila: m.idFila, estado: m.conciliado }));
-      btn.disabled = true;
-      btn.textContent = '⏳ Guardando...';
-      try {
-        const msg = await guardarConciliacionWeb(cambios);
-        alert(msg);
-        await ejecutarBusquedaHistorial();
-      } catch (err) {
-        alert('Error: ' + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '💾 Guardar Conciliación';
-      }
-    });
-
-    // --- CARGAR TRANSACCIÓN EXISTENTE EN EL EDITOR ---
-    async function abrirEditorEnWeb(idTx) {
-      const res = await obtenerMovimientoPorIdWeb(idTx);
-      if (!res || !res.filaPrincipal) return alert('No se encontraron los datos de la transacción.');
-
-      idEnEdicion = res.id;
-      await activarVista('registrar');
-
-      document.getElementById('bannerEdicion').classList.remove('d-none');
-      document.getElementById('textoEdicion').textContent = `✏️ Editando transacción ${res.id}`;
-
-      const p = res.filaPrincipal;
-
-      if (res.serie === '1') {
-        seleccionarSubvistaRegistro('simple');
-        document.getElementById('btnGuardarSimple').textContent = 'Confirmar Cambios';
-        document.getElementById('txFecha').value = p.fecha;
-        document.getElementById('txBeneficiario').value = p.beneficiario;
-        document.getElementById('txTipo').value = p.tipo === 'Egreso' ? 'Gasto' : p.tipo;
-        filtrarCategoriasSimple();
-        document.getElementById('txCuenta').value = p.cuenta;
-        document.getElementById('txMonedaBadge').textContent = catalogos.mapaCuentas[p.cuenta] || 'COP';
-        document.getElementById('txMonto').value = Math.abs(p.monto);
-        document.getElementById('txMemo').value = p.memo;
-        document.getElementById('txCategoria').value = p.categoria;
-        filtrarSubSimple();
-        document.getElementById('txSubcategoria').value = p.subcategoria;
-      } else if (res.serie === '2') {
-        seleccionarSubvistaRegistro('transferencia');
-        document.getElementById('btnGuardarTr').textContent = 'Confirmar Cambios';
-        const d = res.desgloses[0] || null;
-        document.getElementById('trFecha').value = p.fecha;
-        document.getElementById('trNota').value = p.memo || '';
-        document.getElementById('trOrigen').value = p.cuenta;
-        document.getElementById('trMontoOrigen').value = Math.abs(p.monto);
-        if (d) {
-          document.getElementById('trDestino').value = d.cuenta;
-          document.getElementById('trMontoDestino').value = Math.abs(d.monto);
+          if (modoConc) await actualizarPanelConciliacion();
+        } catch (err) {
+          listaDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
         }
-        chequearMonedasTr();
-      } else if (res.serie === '3') {
-        seleccionarSubvistaRegistro('compuesto');
-        document.getElementById('btnGuardarCompuesto').textContent = 'Actualizar Asiento';
-        const montoRef = parseFloat(p.montoRef || p.monto);
-        document.getElementById('cmpFecha').value = p.fecha;
-        document.getElementById('cmpTipo').value = montoRef < 0 ? 'GASTO' : 'INGRESO';
-        document.getElementById('cmpBen').value = p.beneficiario;
-        document.getElementById('cmpCuenta').value = p.cuenta;
-        document.getElementById('cmpMoneda').value = catalogos.mapaCuentas[p.cuenta] || '';
-        document.getElementById('cmpMontoRef').value = montoRef;
-
-        document.getElementById('contenedorPartidas').innerHTML = '';
-        res.desgloses.forEach(part => agregarPartidaCompuesta(part));
-        validarCuadreCompuesto();
       }
-    }
 
-    // --- VISTA 4: CONFIGURACIÓN ---
-    const modalCuentaBS = new bootstrap.Modal(document.getElementById('modalCuentaCfg'));
-    const modalBenBS = new bootstrap.Modal(document.getElementById('modalBenCfg'));
-    const modalCatDetalleBS = new bootstrap.Modal(document.getElementById('modalCatDetalleCfg'));
+      document
+        .getElementById("btnBuscarHist")
+        .addEventListener("click", ejecutarBusquedaHistorial);
 
-    let listasCfg = { instituciones: [], monedas: [] };
-    let listaBenCfgCache = [];
-    let catActualCfg = '';
-    let tipoCatActualCfg = 'Gasto';
+      async function actualizarPanelConciliacion() {
+        const cuenta = document.getElementById("histCuenta").value;
+        const desde = document.getElementById("histDesde").value;
+        const hasta = document.getElementById("histHasta").value;
+        if (!cuenta || !desde || !hasta) return;
 
-    async function refrescarCatalogosGlobales() {
-      catalogos = null; // Fuerza recarga al volver a Registrar o Historial
-    }
+        const moneda = catalogos.mapaCuentas[cuenta] || "COP";
+        const saldos = await obtenerSaldosConciliacionWeb(cuenta, desde, hasta);
+        saldoFinalSistemaNum = saldos.final;
 
-    document.querySelectorAll('#tabsConfiguracion button').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        document.querySelectorAll('#tabsConfiguracion button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const tab = btn.dataset.tabcfg;
-        document.getElementById('cfg-cuentas').classList.toggle('d-none', tab !== 'cuentas');
-        document.getElementById('cfg-beneficiarios').classList.toggle('d-none', tab !== 'beneficiarios');
-        document.getElementById('cfg-categorias').classList.toggle('d-none', tab !== 'categorias');
+        document.getElementById("concSaldoInicial").textContent =
+          formatearMoneda(saldos.inicial, moneda);
+        document.getElementById("concSaldoFinal").textContent = formatearMoneda(
+          saldos.final,
+          moneda,
+        );
+        recalcularTotalesConciliacion();
+      }
 
-        if (tab === 'cuentas') await renderCuentasCfg();
-        if (tab === 'beneficiarios') await renderBeneficiariosCfg();
-        if (tab === 'categorias') await renderCategoriasCfg();
+      function recalcularTotalesConciliacion() {
+        const cuenta = document.getElementById("histCuenta").value;
+        const moneda = catalogos.mapaCuentas[cuenta] || "COP";
+        const saldoBanco =
+          parseFloat(document.getElementById("concSaldoBanco").value) || 0;
+        const dif = saldoFinalSistemaNum - saldoBanco;
+
+        const elDif = document.getElementById("concDiferencia");
+        elDif.textContent = formatearMoneda(dif, moneda);
+        elDif.className =
+          Math.abs(dif) < 0.01
+            ? "fw-bold fs-5 text-success"
+            : "fw-bold fs-5 text-danger";
+
+        const sumaMarcados = movimientosHistorial
+          .filter((m) => m.conciliado)
+          .reduce((acc, m) => acc + m.monto, 0);
+        document.getElementById("concSumaMarcados").textContent =
+          formatearMoneda(sumaMarcados, moneda);
+      }
+
+      document
+        .getElementById("concSaldoBanco")
+        .addEventListener("input", recalcularTotalesConciliacion);
+
+      document
+        .getElementById("chkMarcarTodos")
+        .addEventListener("change", (e) => {
+          const marcado = e.target.checked;
+          document.querySelectorAll(".chk-item-conc").forEach((chk) => {
+            chk.checked = marcado;
+            const idx = parseInt(chk.dataset.idx, 10);
+            movimientosHistorial[idx].conciliado = marcado;
+            chk
+              .closest(".hist-card")
+              .classList.toggle("fila-conciliada", marcado);
+          });
+          recalcularTotalesConciliacion();
+        });
+
+      document
+        .getElementById("btnGuardarConc")
+        .addEventListener("click", async () => {
+          const btn = document.getElementById("btnGuardarConc");
+          const cambios = movimientosHistorial.map((m) => ({
+            idFila: m.idFila,
+            estado: m.conciliado,
+          }));
+          btn.disabled = true;
+          btn.textContent = "⏳ Guardando...";
+          try {
+            const msg = await guardarConciliacionWeb(cambios);
+            alert(msg);
+            await ejecutarBusquedaHistorial();
+          } catch (err) {
+            alert("Error: " + err.message);
+          } finally {
+            btn.disabled = false;
+            btn.textContent = "💾 Guardar Conciliación";
+          }
+        });
+
+      // --- CARGAR TRANSACCIÓN EXISTENTE EN EL EDITOR ---
+      async function abrirEditorEnWeb(idTx) {
+        const res = await obtenerMovimientoPorIdWeb(idTx);
+        if (!res || !res.filaPrincipal)
+          return alert("No se encontraron los datos de la transacción.");
+
+        idEnEdicion = res.id;
+        await activarVista("registrar");
+
+        document.getElementById("bannerEdicion").classList.remove("d-none");
+        document.getElementById("textoEdicion").textContent =
+          `✏️ Editando transacción ${res.id}`;
+
+        const p = res.filaPrincipal;
+
+        if (res.serie === "1") {
+          seleccionarSubvistaRegistro("simple");
+          document.getElementById("btnGuardarSimple").textContent =
+            "Confirmar Cambios";
+          document.getElementById("txFecha").value = p.fecha;
+          document.getElementById("txBeneficiario").value = p.beneficiario;
+          document.getElementById("txTipo").value =
+            p.tipo === "Egreso" ? "Gasto" : p.tipo;
+          filtrarCategoriasSimple();
+          document.getElementById("txCuenta").value = p.cuenta;
+          document.getElementById("txMonedaBadge").textContent =
+            catalogos.mapaCuentas[p.cuenta] || "COP";
+          document.getElementById("txMonto").value = Math.abs(p.monto);
+          document.getElementById("txMemo").value = p.memo;
+          document.getElementById("txCategoria").value = p.categoria;
+          filtrarSubSimple();
+          document.getElementById("txSubcategoria").value = p.subcategoria;
+        } else if (res.serie === "2") {
+          seleccionarSubvistaRegistro("transferencia");
+          document.getElementById("btnGuardarTr").textContent =
+            "Confirmar Cambios";
+          const d = res.desgloses[0] || null;
+          document.getElementById("trFecha").value = p.fecha;
+          document.getElementById("trNota").value = p.memo || "";
+          document.getElementById("trOrigen").value = p.cuenta;
+          document.getElementById("trMontoOrigen").value = Math.abs(p.monto);
+          if (d) {
+            document.getElementById("trDestino").value = d.cuenta;
+            document.getElementById("trMontoDestino").value = Math.abs(d.monto);
+          }
+          chequearMonedasTr();
+        } else if (res.serie === "3") {
+          seleccionarSubvistaRegistro("compuesto");
+          document.getElementById("btnGuardarCompuesto").textContent =
+            "Actualizar Asiento";
+          const montoRef = parseFloat(p.montoRef || p.monto);
+          document.getElementById("cmpFecha").value = p.fecha;
+          document.getElementById("cmpTipo").value =
+            montoRef < 0 ? "GASTO" : "INGRESO";
+          document.getElementById("cmpBen").value = p.beneficiario;
+          document.getElementById("cmpCuenta").value = p.cuenta;
+          document.getElementById("cmpMoneda").value =
+            catalogos.mapaCuentas[p.cuenta] || "";
+          document.getElementById("cmpMontoRef").value = montoRef;
+
+          document.getElementById("contenedorPartidas").innerHTML = "";
+          res.desgloses.forEach((part) => agregarPartidaCompuesta(part));
+          validarCuadreCompuesto();
+        }
+      }
+
+      // --- VISTA 4: CONFIGURACIÓN ---
+      const modalCuentaBS = new bootstrap.Modal(
+        document.getElementById("modalCuentaCfg"),
+      );
+      const modalBenBS = new bootstrap.Modal(
+        document.getElementById("modalBenCfg"),
+      );
+      const modalCatDetalleBS = new bootstrap.Modal(
+        document.getElementById("modalCatDetalleCfg"),
+      );
+
+      let listasCfg = { instituciones: [], monedas: [] };
+      let listaBenCfgCache = [];
+      let catActualCfg = "";
+      let tipoCatActualCfg = "Gasto";
+
+      async function refrescarCatalogosGlobales() {
+        catalogos = null; // Fuerza recarga al volver a Registrar o Historial
+      }
+
+      document.querySelectorAll("#tabsConfiguracion button").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          document
+            .querySelectorAll("#tabsConfiguracion button")
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          const tab = btn.dataset.tabcfg;
+          document
+            .getElementById("cfg-cuentas")
+            .classList.toggle("d-none", tab !== "cuentas");
+          document
+            .getElementById("cfg-beneficiarios")
+            .classList.toggle("d-none", tab !== "beneficiarios");
+          document
+            .getElementById("cfg-categorias")
+            .classList.toggle("d-none", tab !== "categorias");
+
+          if (tab === "cuentas") await renderCuentasCfg();
+          if (tab === "beneficiarios") await renderBeneficiariosCfg();
+          if (tab === "categorias") await renderCategoriasCfg();
+        });
       });
-    });
 
-    async function inicializarConfiguracion() {
-      listasCfg = await obtenerListasConfiguracionWeb();
-      document.getElementById('dlInstituciones').innerHTML =
-        listasCfg.instituciones.map(i => `<option value="${i}">`).join('');
-      document.getElementById('cfgAccMoneda').innerHTML =
-        listasCfg.monedas.map(m => `<option value="${m}">${m}</option>`).join('');
+      async function inicializarConfiguracion() {
+        listasCfg = await obtenerListasConfiguracionWeb();
+        document.getElementById("dlInstituciones").innerHTML =
+          listasCfg.instituciones.map((i) => `<option value="${i}">`).join("");
+        document.getElementById("cfgAccMoneda").innerHTML = listasCfg.monedas
+          .map((m) => `<option value="${m}">${m}</option>`)
+          .join("");
 
-      await renderCuentasCfg();
-    }
+        await renderCuentasCfg();
+      }
 
-    // 1. Cuentas
-    async function renderCuentasCfg() {
-      const cont = document.getElementById('tablaCuentasCfg');
-      cont.innerHTML = '<div class="text-center text-muted py-3">Cargando cuentas...</div>';
-      const cuentas = await obtenerDatosCuentasWeb();
+      // 1. Cuentas
+      async function renderCuentasCfg() {
+        const cont = document.getElementById("tablaCuentasCfg");
+        cont.innerHTML =
+          '<div class="text-center text-muted py-3">Cargando cuentas...</div>';
+        const cuentas = await obtenerDatosCuentasWeb();
 
-      let html = `
+        let html = `
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
@@ -1528,13 +2237,14 @@ import {
           </thead>
           <tbody>`;
 
-      cuentas.forEach((c, idx) => {
-        const badge = (c.estado === 'Activa' || c.estado === 'Activo')
-          ? '<span class="badge bg-success-subtle text-success">Activa</span>'
-          : '<span class="badge bg-danger-subtle text-danger">Inactiva</span>';
-        html += `
+        cuentas.forEach((c, idx) => {
+          const badge =
+            c.estado === "Activa" || c.estado === "Activo"
+              ? '<span class="badge bg-success-subtle text-success">Activa</span>'
+              : '<span class="badge bg-danger-subtle text-danger">Inactiva</span>';
+          html += `
           <tr>
-            <td>${c.institucion || '-'}</td>
+            <td>${c.institucion || "-"}</td>
             <td><strong>${c.nombre}</strong><br><small class="text-muted">${c.tipo}</small></td>
             <td><span class="badge bg-light text-dark border">${c.moneda}</span></td>
             <td>${badge}</td>
@@ -1542,92 +2252,108 @@ import {
               <button type="button" class="btn btn-sm btn-outline-primary btn-edit-acc" data-idx="${idx}">✏️</button>
             </td>
           </tr>`;
-      });
-
-      html += '</tbody></table>';
-      cont.innerHTML = html;
-
-      cont.querySelectorAll('.btn-edit-acc').forEach(btn => {
-        btn.addEventListener('click', () => abrirModalCuentaCfg(cuentas[parseInt(btn.dataset.idx, 10)]));
-      });
-    }
-
-    function abrirModalCuentaCfg(datos = null) {
-      const selMoneda = document.getElementById('cfgAccMoneda');
-      if (datos) {
-        document.getElementById('tituloModalCuenta').textContent = 'Editar Cuenta';
-        document.getElementById('cfgAccId').value = datos.idFila;
-        document.getElementById('cfgAccInstitucion').value = datos.institucion;
-        document.getElementById('cfgAccTipo').value = datos.tipo || 'Ahorros';
-        document.getElementById('cfgAccNombre').value = datos.nombre;
-        document.getElementById('cfgAccFecha').value = datos.fechaApertura || '';
-        selMoneda.value = datos.moneda;
-        selMoneda.disabled = true;
-        document.getElementById('cfgAccEstado').value = datos.estado === 'Inactiva' ? 'Inactiva' : 'Activa';
-      } else {
-        document.getElementById('tituloModalCuenta').textContent = 'Nueva Cuenta';
-        document.getElementById('cfgAccId').value = '';
-        document.getElementById('cfgAccInstitucion').value = '';
-        document.getElementById('cfgAccTipo').value = 'Ahorros';
-        document.getElementById('cfgAccNombre').value = '';
-        document.getElementById('cfgAccFecha').value = hoyISO;
-        selMoneda.disabled = false;
-        selMoneda.value = 'COP';
-        document.getElementById('cfgAccEstado').value = 'Activa';
-      }
-      modalCuentaBS.show();
-    }
-
-    document.getElementById('btnNuevaCuenta').addEventListener('click', () => abrirModalCuentaCfg(null));
-
-    document.getElementById('btnGuardarCuentaCfg').addEventListener('click', async () => {
-      const nombre = document.getElementById('cfgAccNombre').value.trim();
-      const institucion = document.getElementById('cfgAccInstitucion').value.trim();
-      if (!nombre || !institucion) return alert('Completa al menos Institución y Nombre.');
-
-      const btn = document.getElementById('btnGuardarCuentaCfg');
-      btn.disabled = true;
-      btn.textContent = 'Guardando...';
-      try {
-        const msg = await guardarCuentaWeb({
-          idFila: document.getElementById('cfgAccId').value,
-          institucion,
-          tipo: document.getElementById('cfgAccTipo').value,
-          nombre,
-          fecha: document.getElementById('cfgAccFecha').value,
-          moneda: document.getElementById('cfgAccMoneda').value,
-          estado: document.getElementById('cfgAccEstado').value
         });
-        alert(msg);
-        modalCuentaBS.hide();
-        await renderCuentasCfg();
-        await refrescarCatalogosGlobales();
-      } catch (err) {
-        alert('Error: ' + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Guardar Cuenta';
-      }
-    });
 
-    // 2. Beneficiarios
-    async function renderBeneficiariosCfg() {
-      const cont = document.getElementById('tablaBenCfg');
-      document.getElementById('btnFusionarBen').classList.add('d-none');
-      cont.innerHTML = '<div class="text-center text-muted py-3">Analizando historial...</div>';
+        html += "</tbody></table>";
+        cont.innerHTML = html;
 
-      listaBenCfgCache = await obtenerDatosBeneficiariosWeb();
-      pintarTablaBeneficiarios(listaBenCfgCache);
-    }
-
-    function pintarTablaBeneficiarios(lista) {
-      const cont = document.getElementById('tablaBenCfg');
-      if (!lista || lista.length === 0) {
-        cont.innerHTML = '<div class="text-center text-muted py-3">No hay beneficiarios.</div>';
-        return;
+        cont.querySelectorAll(".btn-edit-acc").forEach((btn) => {
+          btn.addEventListener("click", () =>
+            abrirModalCuentaCfg(cuentas[parseInt(btn.dataset.idx, 10)]),
+          );
+        });
       }
 
-      let html = `
+      function abrirModalCuentaCfg(datos = null) {
+        const selMoneda = document.getElementById("cfgAccMoneda");
+        if (datos) {
+          document.getElementById("tituloModalCuenta").textContent =
+            "Editar Cuenta";
+          document.getElementById("cfgAccId").value = datos.idFila;
+          document.getElementById("cfgAccInstitucion").value =
+            datos.institucion;
+          document.getElementById("cfgAccTipo").value = datos.tipo || "Ahorros";
+          document.getElementById("cfgAccNombre").value = datos.nombre;
+          document.getElementById("cfgAccFecha").value =
+            datos.fechaApertura || "";
+          selMoneda.value = datos.moneda;
+          selMoneda.disabled = true;
+          document.getElementById("cfgAccEstado").value =
+            datos.estado === "Inactiva" ? "Inactiva" : "Activa";
+        } else {
+          document.getElementById("tituloModalCuenta").textContent =
+            "Nueva Cuenta";
+          document.getElementById("cfgAccId").value = "";
+          document.getElementById("cfgAccInstitucion").value = "";
+          document.getElementById("cfgAccTipo").value = "Ahorros";
+          document.getElementById("cfgAccNombre").value = "";
+          document.getElementById("cfgAccFecha").value = hoyISO;
+          selMoneda.disabled = false;
+          selMoneda.value = "COP";
+          document.getElementById("cfgAccEstado").value = "Activa";
+        }
+        modalCuentaBS.show();
+      }
+
+      document
+        .getElementById("btnNuevaCuenta")
+        .addEventListener("click", () => abrirModalCuentaCfg(null));
+
+      document
+        .getElementById("btnGuardarCuentaCfg")
+        .addEventListener("click", async () => {
+          const nombre = document.getElementById("cfgAccNombre").value.trim();
+          const institucion = document
+            .getElementById("cfgAccInstitucion")
+            .value.trim();
+          if (!nombre || !institucion)
+            return alert("Completa al menos Institución y Nombre.");
+
+          const btn = document.getElementById("btnGuardarCuentaCfg");
+          btn.disabled = true;
+          btn.textContent = "Guardando...";
+          try {
+            const msg = await guardarCuentaWeb({
+              idFila: document.getElementById("cfgAccId").value,
+              institucion,
+              tipo: document.getElementById("cfgAccTipo").value,
+              nombre,
+              fecha: document.getElementById("cfgAccFecha").value,
+              moneda: document.getElementById("cfgAccMoneda").value,
+              estado: document.getElementById("cfgAccEstado").value,
+            });
+            alert(msg);
+            modalCuentaBS.hide();
+            await renderCuentasCfg();
+            await refrescarCatalogosGlobales();
+          } catch (err) {
+            alert("Error: " + err.message);
+          } finally {
+            btn.disabled = false;
+            btn.textContent = "Guardar Cuenta";
+          }
+        });
+
+      // 2. Beneficiarios
+      async function renderBeneficiariosCfg() {
+        const cont = document.getElementById("tablaBenCfg");
+        document.getElementById("btnFusionarBen").classList.add("d-none");
+        cont.innerHTML =
+          '<div class="text-center text-muted py-3">Analizando historial...</div>';
+
+        listaBenCfgCache = await obtenerDatosBeneficiariosWeb();
+        pintarTablaBeneficiarios(listaBenCfgCache);
+      }
+
+      function pintarTablaBeneficiarios(lista) {
+        const cont = document.getElementById("tablaBenCfg");
+        if (!lista || lista.length === 0) {
+          cont.innerHTML =
+            '<div class="text-center text-muted py-3">No hay beneficiarios.</div>';
+          return;
+        }
+
+        let html = `
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light sticky-top">
             <tr>
@@ -1640,11 +2366,12 @@ import {
           </thead>
           <tbody>`;
 
-      lista.forEach(b => {
-        const badge = b.estado === 'Activo'
-          ? '<span class="badge bg-success-subtle text-success">Activo</span>'
-          : '<span class="badge bg-danger-subtle text-danger">Inactivo</span>';
-        html += `
+        lista.forEach((b) => {
+          const badge =
+            b.estado === "Activo"
+              ? '<span class="badge bg-success-subtle text-success">Activo</span>'
+              : '<span class="badge bg-danger-subtle text-danger">Inactivo</span>';
+          html += `
           <tr>
             <td><input type="checkbox" class="form-check-input chk-ben-fusion" value="${b.nombre}"></td>
             <td><strong>${b.nombre}</strong><br><small class="text-muted">Último uso: ${b.ultimaFecha}</small></td>
@@ -1652,90 +2379,129 @@ import {
             <td class="text-center"><span class="badge bg-primary-subtle text-primary">${b.usos}</span></td>
             <td class="text-end">
               <button type="button" class="btn btn-sm btn-outline-primary btn-edit-ben" data-id="${b.idFila}">✏️</button>
-              ${b.usos === 0 ? `<button type="button" class="btn btn-sm btn-outline-danger btn-del-ben" data-id="${b.idFila}" data-nom="${b.nombre}">🗑️</button>` : ''}
+              ${b.usos === 0 ? `<button type="button" class="btn btn-sm btn-outline-danger btn-del-ben" data-id="${b.idFila}" data-nom="${b.nombre}">🗑️</button>` : ""}
             </td>
           </tr>`;
-      });
-
-      html += '</tbody></table>';
-      cont.innerHTML = html;
-
-      cont.querySelectorAll('.chk-ben-fusion').forEach(chk => {
-        chk.addEventListener('change', () => {
-          const cant = cont.querySelectorAll('.chk-ben-fusion:checked').length;
-          document.getElementById('btnFusionarBen').classList.toggle('d-none', cant < 2);
         });
-      });
 
-      cont.querySelectorAll('.btn-edit-ben').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const item = listaBenCfgCache.find(x => String(x.idFila) === btn.dataset.id);
-          abrirModalBenCfg(item);
+        html += "</tbody></table>";
+        cont.innerHTML = html;
+
+        cont.querySelectorAll(".chk-ben-fusion").forEach((chk) => {
+          chk.addEventListener("change", () => {
+            const cant = cont.querySelectorAll(
+              ".chk-ben-fusion:checked",
+            ).length;
+            document
+              .getElementById("btnFusionarBen")
+              .classList.toggle("d-none", cant < 2);
+          });
         });
-      });
 
-      cont.querySelectorAll('.btn-del-ben').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          if (!confirm(`¿Eliminar a "${btn.dataset.nom}"?`)) return;
-          const msg = await eliminarBeneficiarioWeb(btn.dataset.id, btn.dataset.nom);
+        cont.querySelectorAll(".btn-edit-ben").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const item = listaBenCfgCache.find(
+              (x) => String(x.idFila) === btn.dataset.id,
+            );
+            abrirModalBenCfg(item);
+          });
+        });
+
+        cont.querySelectorAll(".btn-del-ben").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            if (!confirm(`¿Eliminar a "${btn.dataset.nom}"?`)) return;
+            const msg = await eliminarBeneficiarioWeb(
+              btn.dataset.id,
+              btn.dataset.nom,
+            );
+            alert(msg);
+            await renderBeneficiariosCfg();
+            await refrescarCatalogosGlobales();
+          });
+        });
+      }
+
+      document
+        .getElementById("txtFiltroBenCfg")
+        .addEventListener("input", (e) => {
+          const q = e.target.value.trim().toLowerCase();
+          const filtrados = listaBenCfgCache.filter((b) =>
+            b.nombre.toLowerCase().includes(q),
+          );
+          pintarTablaBeneficiarios(filtrados);
+        });
+
+      function abrirModalBenCfg(datos = null) {
+        document.getElementById("tituloModalBen").textContent = datos
+          ? "Editar Beneficiario"
+          : "Nuevo Beneficiario";
+        document.getElementById("cfgBenId").value = datos ? datos.idFila : "";
+        document.getElementById("cfgBenNombre").value = datos
+          ? datos.nombre
+          : "";
+        document.getElementById("cfgBenEstado").value = datos
+          ? datos.estado
+          : "Activo";
+        modalBenBS.show();
+      }
+
+      document
+        .getElementById("btnNuevoBen")
+        .addEventListener("click", () => abrirModalBenCfg(null));
+
+      document
+        .getElementById("btnGuardarBenCfg")
+        .addEventListener("click", async () => {
+          const nombre = document.getElementById("cfgBenNombre").value.trim();
+          if (!nombre) return alert("Escribe un nombre.");
+
+          const msg = await guardarBeneficiarioWeb({
+            idFila: document.getElementById("cfgBenId").value,
+            nombre,
+            estado: document.getElementById("cfgBenEstado").value,
+          });
+          alert(msg);
+          modalBenBS.hide();
+          await renderBeneficiariosCfg();
+          await refrescarCatalogosGlobales();
+        });
+
+      document
+        .getElementById("btnFusionarBen")
+        .addEventListener("click", async () => {
+          const seleccionados = Array.from(
+            document.querySelectorAll(".chk-ben-fusion:checked"),
+          ).map((cb) => cb.value);
+          if (seleccionados.length < 2) return;
+          const nombreFinal = prompt(
+            `Vas a fusionar: ${seleccionados.join(", ")}\n\nEscribe el nombre ÚNICO que debe quedar:`,
+            seleccionados[0],
+          );
+          if (!nombreFinal) return;
+          if (
+            !confirm(
+              `¿Confirmas unificar todos sus movimientos bajo "${nombreFinal.trim()}"?`,
+            )
+          )
+            return;
+
+          const msg = await fusionarBeneficiariosWeb(
+            seleccionados,
+            nombreFinal,
+          );
           alert(msg);
           await renderBeneficiariosCfg();
           await refrescarCatalogosGlobales();
         });
-      });
-    }
 
-    document.getElementById('txtFiltroBenCfg').addEventListener('input', (e) => {
-      const q = e.target.value.trim().toLowerCase();
-      const filtrados = listaBenCfgCache.filter(b => b.nombre.toLowerCase().includes(q));
-      pintarTablaBeneficiarios(filtrados);
-    });
+      // 3. Categorías y Subcategorías
+      async function renderCategoriasCfg() {
+        const cont = document.getElementById("tablaCatCfg");
+        cont.innerHTML =
+          '<div class="text-center text-muted py-3">Cargando categorías...</div>';
+        const lista = await obtenerCategoriasPrincipalesWeb();
 
-    function abrirModalBenCfg(datos = null) {
-      document.getElementById('tituloModalBen').textContent = datos ? 'Editar Beneficiario' : 'Nuevo Beneficiario';
-      document.getElementById('cfgBenId').value = datos ? datos.idFila : '';
-      document.getElementById('cfgBenNombre').value = datos ? datos.nombre : '';
-      document.getElementById('cfgBenEstado').value = datos ? datos.estado : 'Activo';
-      modalBenBS.show();
-    }
-
-    document.getElementById('btnNuevoBen').addEventListener('click', () => abrirModalBenCfg(null));
-
-    document.getElementById('btnGuardarBenCfg').addEventListener('click', async () => {
-      const nombre = document.getElementById('cfgBenNombre').value.trim();
-      if (!nombre) return alert('Escribe un nombre.');
-
-      const msg = await guardarBeneficiarioWeb({
-        idFila: document.getElementById('cfgBenId').value,
-        nombre,
-        estado: document.getElementById('cfgBenEstado').value
-      });
-      alert(msg);
-      modalBenBS.hide();
-      await renderBeneficiariosCfg();
-      await refrescarCatalogosGlobales();
-    });
-
-    document.getElementById('btnFusionarBen').addEventListener('click', async () => {
-      const seleccionados = Array.from(document.querySelectorAll('.chk-ben-fusion:checked')).map(cb => cb.value);
-      if (seleccionados.length < 2) return;
-      const nombreFinal = prompt(`Vas a fusionar: ${seleccionados.join(', ')}\n\nEscribe el nombre ÚNICO que debe quedar:`, seleccionados[0]);
-      if (!nombreFinal) return;
-      if (!confirm(`¿Confirmas unificar todos sus movimientos bajo "${nombreFinal.trim()}"?`)) return;
-
-      const msg = await fusionarBeneficiariosWeb(seleccionados, nombreFinal);
-      alert(msg);
-      await renderBeneficiariosCfg();
-      await refrescarCatalogosGlobales();
-    });
-
-    // 3. Categorías y Subcategorías
-    async function renderCategoriasCfg() {
-      const cont = document.getElementById('tablaCatCfg');
-      cont.innerHTML = '<div class="text-center text-muted py-3">Cargando categorías...</div>';
-      const lista = await obtenerCategoriasPrincipalesWeb();
-
-      let html = `
+        let html = `
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
@@ -1746,12 +2512,12 @@ import {
           </thead>
           <tbody>`;
 
-      lista.forEach(c => {
-        const esIngreso = c.tipo === 'Ingreso';
-        const badge = esIngreso
-          ? '<span class="badge bg-success-subtle text-success">INGRESO</span>'
-          : '<span class="badge bg-danger-subtle text-danger">GASTO</span>';
-        html += `
+        lista.forEach((c) => {
+          const esIngreso = c.tipo === "Ingreso";
+          const badge = esIngreso
+            ? '<span class="badge bg-success-subtle text-success">INGRESO</span>'
+            : '<span class="badge bg-danger-subtle text-danger">GASTO</span>';
+          html += `
           <tr>
             <td><strong>${c.nombre}</strong></td>
             <td class="text-center">${badge}</td>
@@ -1761,93 +2527,132 @@ import {
               </button>
             </td>
           </tr>`;
-      });
+        });
 
-      html += '</tbody></table>';
-      cont.innerHTML = html;
+        html += "</tbody></table>";
+        cont.innerHTML = html;
 
-      cont.querySelectorAll('.btn-ver-subcats').forEach(btn => {
-        btn.addEventListener('click', () => abrirDetalleCategoriaCfg(btn.dataset.cat, btn.dataset.tipo));
-      });
-    }
-
-    async function abrirDetalleCategoriaCfg(nombre, tipo) {
-      catActualCfg = nombre;
-      tipoCatActualCfg = tipo;
-      document.getElementById('tituloModalCat').textContent = `📂 ${nombre}`;
-      const cont = document.getElementById('listaSubcatsCfg');
-      cont.innerHTML = '<div class="p-3 text-muted">Cargando subcategorías...</div>';
-      modalCatDetalleBS.show();
-
-      const subs = await obtenerSubcategoriasPorCatWeb(nombre);
-      if (subs.length === 0) {
-        cont.innerHTML = '<div class="p-3 text-muted fst-italic">No hay subcategorías registradas.</div>';
-        return;
+        cont.querySelectorAll(".btn-ver-subcats").forEach((btn) => {
+          btn.addEventListener("click", () =>
+            abrirDetalleCategoriaCfg(btn.dataset.cat, btn.dataset.tipo),
+          );
+        });
       }
 
-      let html = '<table class="table table-sm align-middle mb-0"><tbody>';
-      subs.forEach(s => {
-        html += `
+      async function abrirDetalleCategoriaCfg(nombre, tipo) {
+        catActualCfg = nombre;
+        tipoCatActualCfg = tipo;
+        document.getElementById("tituloModalCat").textContent = `📂 ${nombre}`;
+        const cont = document.getElementById("listaSubcatsCfg");
+        cont.innerHTML =
+          '<div class="p-3 text-muted">Cargando subcategorías...</div>';
+        modalCatDetalleBS.show();
+
+        const subs = await obtenerSubcategoriasPorCatWeb(nombre);
+        if (subs.length === 0) {
+          cont.innerHTML =
+            '<div class="p-3 text-muted fst-italic">No hay subcategorías registradas.</div>';
+          return;
+        }
+
+        let html = '<table class="table table-sm align-middle mb-0"><tbody>';
+        subs.forEach((s) => {
+          html += `
           <tr>
-            <td class="px-3 py-2">${s.sub || '---'}</td>
+            <td class="px-3 py-2">${s.sub || "---"}</td>
             <td class="text-end px-3">
               <button type="button" class="btn btn-sm btn-outline-secondary btn-edit-sub" data-id="${s.idFila}" data-sub="${s.sub}">✏️</button>
             </td>
           </tr>`;
-      });
-      html += '</tbody></table>';
-      cont.innerHTML = html;
+        });
+        html += "</tbody></table>";
+        cont.innerHTML = html;
 
-      cont.querySelectorAll('.btn-edit-sub').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const actual = btn.dataset.sub;
-          const nuevo = prompt(`Editar subcategoría "${actual}":`, actual);
-          if (!nuevo || nuevo.trim() === actual) return;
-          const msg = await actualizarSubcategoriaMasivoWeb(btn.dataset.id, catActualCfg, actual, nuevo, tipoCatActualCfg);
-          alert(msg);
+        cont.querySelectorAll(".btn-edit-sub").forEach((btn) => {
+          btn.addEventListener("click", async () => {
+            const actual = btn.dataset.sub;
+            const nuevo = prompt(`Editar subcategoría "${actual}":`, actual);
+            if (!nuevo || nuevo.trim() === actual) return;
+            const msg = await actualizarSubcategoriaMasivoWeb(
+              btn.dataset.id,
+              catActualCfg,
+              actual,
+              nuevo,
+              tipoCatActualCfg,
+            );
+            alert(msg);
+            await abrirDetalleCategoriaCfg(catActualCfg, tipoCatActualCfg);
+            await refrescarCatalogosGlobales();
+          });
+        });
+      }
+
+      document
+        .getElementById("btnAddSubcatCfg")
+        .addEventListener("click", async () => {
+          const inp = document.getElementById("txtNuevaSubcatCfg");
+          const nombreSub = inp.value.trim();
+          if (!nombreSub) return;
+          await guardarCategoriaWeb({
+            tipo: tipoCatActualCfg,
+            categoria: catActualCfg,
+            subcategoria: nombreSub,
+          });
+          inp.value = "";
           await abrirDetalleCategoriaCfg(catActualCfg, tipoCatActualCfg);
           await refrescarCatalogosGlobales();
         });
-      });
-    }
 
-    document.getElementById('btnAddSubcatCfg').addEventListener('click', async () => {
-      const inp = document.getElementById('txtNuevaSubcatCfg');
-      const nombreSub = inp.value.trim();
-      if (!nombreSub) return;
-      await guardarCategoriaWeb({ tipo: tipoCatActualCfg, categoria: catActualCfg, subcategoria: nombreSub });
-      inp.value = '';
-      await abrirDetalleCategoriaCfg(catActualCfg, tipoCatActualCfg);
-      await refrescarCatalogosGlobales();
-    });
+      document
+        .getElementById("btnRenombrarCat")
+        .addEventListener("click", async () => {
+          if (!catActualCfg) return;
+          const nuevo = prompt(
+            `Nuevo nombre para la categoría "${catActualCfg}":`,
+            catActualCfg,
+          );
+          if (!nuevo || nuevo.trim() === catActualCfg) return;
+          if (
+            !confirm(
+              "Se actualizará el historial de transacciones. ¿Continuar?",
+            )
+          )
+            return;
 
-    document.getElementById('btnRenombrarCat').addEventListener('click', async () => {
-      if (!catActualCfg) return;
-      const nuevo = prompt(`Nuevo nombre para la categoría "${catActualCfg}":`, catActualCfg);
-      if (!nuevo || nuevo.trim() === catActualCfg) return;
-      if (!confirm('Se actualizará el historial de transacciones. ¿Continuar?')) return;
+          const msg = await renombrarCategoriaPrincipalWeb(catActualCfg, nuevo);
+          alert(msg);
+          catActualCfg = nuevo.trim();
+          document.getElementById("tituloModalCat").textContent =
+            `📂 ${catActualCfg}`;
+          await renderCategoriasCfg();
+          await refrescarCatalogosGlobales();
+        });
 
-      const msg = await renombrarCategoriaPrincipalWeb(catActualCfg, nuevo);
-      alert(msg);
-      catActualCfg = nuevo.trim();
-      document.getElementById('tituloModalCat').textContent = `📂 ${catActualCfg}`;
-      await renderCategoriasCfg();
-      await refrescarCatalogosGlobales();
-    });
+      document
+        .getElementById("btnNuevaCat")
+        .addEventListener("click", async () => {
+          const nombre = prompt("Nombre de la nueva Categoría principal:");
+          if (!nombre || !nombre.trim()) return;
+          const tipo = confirm(
+            "¿Es una categoría de INGRESO?\n(Aceptar = Ingreso / Cancelar = Gasto)",
+          )
+            ? "Ingreso"
+            : "Gasto";
+          const sub = prompt(
+            `Primera subcategoría para "${nombre.trim()}":`,
+            "General",
+          );
+          if (!sub || !sub.trim()) return;
 
-    document.getElementById('btnNuevaCat').addEventListener('click', async () => {
-      const nombre = prompt('Nombre de la nueva Categoría principal:');
-      if (!nombre || !nombre.trim()) return;
-      const tipo = confirm('¿Es una categoría de INGRESO?\n(Aceptar = Ingreso / Cancelar = Gasto)') ? 'Ingreso' : 'Gasto';
-      const sub = prompt(`Primera subcategoría para "${nombre.trim()}":`, 'General');
-      if (!sub || !sub.trim()) return;
-
-      const msg = await guardarCategoriaWeb({ tipo, categoria: nombre.trim(), subcategoria: sub.trim() });
-      alert(msg);
-      await renderCategoriasCfg();
-      await refrescarCatalogosGlobales();
-    });
-    
-  </script>
-</body>
+          const msg = await guardarCategoriaWeb({
+            tipo,
+            categoria: nombre.trim(),
+            subcategoria: sub.trim(),
+          });
+          alert(msg);
+          await renderCategoriasCfg();
+          await refrescarCatalogosGlobales();
+        });
+    </script>
+  </body>
 </html>

@@ -19,28 +19,29 @@
       transition: transform 0.1s ease;
     }
     .cuenta-item:hover { transform: translateY(-1px); }
-    .form-card {
-      max-width: 680px;
-      margin: auto;
-      border-radius: 12px;
-      border: none;
-    }
-    .partida-card {
-      border-left: 6px solid #dc3545;
-      border-radius: 8px;
-      position: relative;
-    }
+    .form-card { max-width: 720px; margin: auto; border-radius: 12px; border: none; }
+    .partida-card { border-left: 6px solid #dc3545; border-radius: 8px; position: relative; }
     .partida-card.ingreso { border-left-color: #198754; }
     .partida-card.transf { border-left-color: #0d6efd; }
     .btn-del-partida {
-      position: absolute;
-      top: -10px;
-      right: -10px;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      padding: 0;
-      line-height: 1;
+      position: absolute; top: -10px; right: -10px;
+      width: 28px; height: 28px; border-radius: 50%; padding: 0; line-height: 1;
+    }
+    .hist-card {
+      border-radius: 10px;
+      border: 1px solid #dadce0;
+      transition: background-color 0.15s ease;
+    }
+    .fila-conciliada {
+      background-color: #e8f5e9 !important;
+      border-color: #81c784 !important;
+    }
+    .panel-conc-sticky {
+      position: sticky;
+      top: 10px;
+      z-index: 100;
+      border: 2px solid #1a73e8;
+      border-radius: 12px;
     }
   </style>
 </head>
@@ -57,7 +58,7 @@
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
           <li class="nav-item"><a class="nav-link active" href="#" data-vista="saldos">Saldos</a></li>
           <li class="nav-item"><a class="nav-link" href="#" data-vista="registrar">Registrar Movimiento</a></li>
-          <li class="nav-item"><a class="nav-link disabled" href="#">Historial</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" data-vista="historial">Historial</a></li>
           <li class="nav-item"><a class="nav-link disabled" href="#">Gastos</a></li>
           <li class="nav-item"><a class="nav-link disabled" href="#">Configuración</a></li>
         </ul>
@@ -95,10 +96,17 @@
     </section>
 
     <!-- =================================================================== -->
-    <!-- VISTA 2: REGISTRAR MOVIMIENTO (SIMPLE / TRANSFERENCIA / COMPUESTO)  -->
+    <!-- VISTA 2: REGISTRAR / EDITAR MOVIMIENTO                              -->
     <!-- =================================================================== -->
     <section id="vista-registrar" class="d-none">
       <div class="card form-card shadow-sm p-4 bg-white">
+
+        <!-- Banner Modo Edición -->
+        <div id="bannerEdicion" class="alert alert-warning d-none d-flex justify-content-between align-items-center">
+          <span id="textoEdicion" class="fw-bold">✏️ Editando transacción</span>
+          <button type="button" id="btnCancelarEdicion" class="btn btn-sm btn-outline-dark">Cancelar Edición</button>
+        </div>
+
         <!-- Selector de Tipo de Formulario -->
         <ul class="nav nav-pills nav-fill mb-4 bg-light p-1 rounded" id="tabsRegistro">
           <li class="nav-item">
@@ -230,7 +238,6 @@
 
         <!-- SUBVISTA C: ASIENTO COMPUESTO / DESGLOSE (SERIE 3) -->
         <div id="formCompuesto" class="d-none">
-          <!-- Plantillas -->
           <div class="p-3 mb-3 rounded bg-primary-subtle border border-primary">
             <label class="form-label small fw-bold text-primary">📂 Plantillas Guardadas</label>
             <div class="input-group input-group-sm mb-2">
@@ -246,7 +253,6 @@
             </div>
           </div>
 
-          <!-- Cabecera -->
           <div class="p-3 mb-3 rounded border bg-light">
             <div class="row g-2">
               <div class="col-md-6">
@@ -279,7 +285,6 @@
             </div>
           </div>
 
-          <!-- Partidas -->
           <div id="contenedorPartidas" class="d-flex flex-column gap-3 mb-3"></div>
 
           <button type="button" id="btnAddPartida" class="btn btn-success btn-sm w-100 fw-bold mb-3">
@@ -298,6 +303,90 @@
       </div>
     </section>
 
+    <!-- =================================================================== -->
+    <!-- VISTA 3: HISTORIAL Y MODO CONCILIACIÓN                              -->
+    <!-- =================================================================== -->
+    <section id="vista-historial" class="d-none">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <h5 class="fw-bold text-dark mb-0">Historial y Conciliación</h5>
+        <div class="form-check form-switch bg-white px-3 py-2 rounded border shadow-sm">
+          <input class="form-check-input" type="checkbox" id="chkModoConciliacion">
+          <label class="form-check-label fw-bold text-primary" for="chkModoConciliacion">
+            🔍 Modo Conciliación
+          </label>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="card p-3 mb-3 shadow-sm border-0">
+        <div class="row g-2">
+          <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted">Desde</label>
+            <input type="date" id="histDesde" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-bold text-muted">Hasta</label>
+            <input type="date" id="histHasta" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-bold text-muted">Cuenta</label>
+            <select id="histCuenta" class="form-select form-select-sm"></select>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label small fw-bold text-muted">Beneficiario</label>
+            <select id="histBen" class="form-select form-select-sm"></select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-bold text-muted">Categoría</label>
+            <select id="histCat" class="form-select form-select-sm"></select>
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button id="btnBuscarHist" class="btn btn-primary btn-sm w-100 fw-bold">Buscar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel Sticky de Conciliación -->
+      <div id="panelConciliacion" class="card panel-conc-sticky bg-white p-3 mb-3 shadow d-none">
+        <div class="row g-2 align-items-center text-center">
+          <div class="col-6 col-md-3">
+            <div class="small text-muted fw-bold">SALDO INICIAL</div>
+            <div id="concSaldoInicial" class="fw-bold text-dark">$ 0</div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="small text-muted fw-bold">SALDO FINAL SISTEMA</div>
+            <div id="concSaldoFinal" class="fw-bold text-dark">$ 0</div>
+          </div>
+          <div class="col-md-3">
+            <label class="small text-muted fw-bold d-block">SALDO BANCO</label>
+            <input type="number" id="concSaldoBanco" step="0.01" class="form-control form-control-sm text-center fw-bold border-primary" placeholder="0.00">
+          </div>
+          <div class="col-md-3">
+            <div class="small text-muted fw-bold">DIFERENCIA</div>
+            <div id="concDiferencia" class="fw-bold fs-5 text-danger">$ 0</div>
+          </div>
+        </div>
+        <hr class="my-2">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="chkMarcarTodos">
+            <label class="form-check-label small fw-bold text-primary" for="chkMarcarTodos">
+              Marcar todos como conciliados
+            </label>
+          </div>
+          <div class="small text-muted">
+            Suma seleccionados: <strong id="concSumaMarcados">$ 0</strong>
+          </div>
+          <button id="btnGuardarConc" class="btn btn-success btn-sm fw-bold">💾 Guardar Conciliación</button>
+        </div>
+      </div>
+
+      <!-- Lista de Resultados -->
+      <div id="listaHistorial" class="d-flex flex-column gap-2">
+        <div class="text-center text-muted py-4">Usa los filtros y pulsa Buscar para consultar registros.</div>
+      </div>
+    </section>
+
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -313,6 +402,13 @@
       guardarPlantillaWeb,
       eliminarPlantillaWeb
     } from './js/transacciones.js';
+    import {
+      buscarHistorialWeb,
+      obtenerMovimientoPorIdWeb,
+      eliminarMovimientoWeb,
+      guardarConciliacionWeb,
+      obtenerSaldosConciliacionWeb
+    } from './js/historial.js';
 
     const session = await verificarSesion();
     if (!session) throw new Error('Sin sesión');
@@ -320,34 +416,46 @@
     document.getElementById('usuarioEmail').textContent = session.user.email;
     document.getElementById('btnSalir').addEventListener('click', cerrarSesion);
 
-    const hoyISO = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const hoy = new Date();
+    const hoyISO = new Date(Date.now() - hoy.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const primerDiaMesISO = new Date(hoy.getFullYear(), hoy.getMonth(), 1 - hoy.getTimezoneOffset() / 1440).toISOString().split('T')[0];
+
     let catalogos = null;
+    let idEnEdicion = null;
+    let movimientosHistorial = [];
+    let saldoFinalSistemaNum = 0;
 
     // --- NAVEGACIÓN ENTRE VISTAS ---
+    async function activarVista(vista) {
+      document.querySelectorAll('[data-vista]').forEach(l => l.classList.toggle('active', l.dataset.vista === vista));
+      document.getElementById('vista-saldos').classList.toggle('d-none', vista !== 'saldos');
+      document.getElementById('vista-registrar').classList.toggle('d-none', vista !== 'registrar');
+      document.getElementById('vista-historial').classList.toggle('d-none', vista !== 'historial');
+
+      if (!catalogos && (vista === 'registrar' || vista === 'historial')) {
+        await inicializarCatalogosYFormularios();
+      }
+      if (vista === 'saldos') cargarSaldos();
+    }
+
     document.querySelectorAll('[data-vista]').forEach(link => {
-      link.addEventListener('click', async (e) => {
+      link.addEventListener('click', (e) => {
         e.preventDefault();
-        const vista = link.dataset.vista;
-        document.querySelectorAll('[data-vista]').forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-
-        document.getElementById('vista-saldos').classList.toggle('d-none', vista !== 'saldos');
-        document.getElementById('vista-registrar').classList.toggle('d-none', vista !== 'registrar');
-
-        if (vista === 'saldos') cargarSaldos();
-        if (vista === 'registrar' && !catalogos) await inicializarFormularios();
+        activarVista(link.dataset.vista);
       });
     });
 
-    // --- LÓGICA VISTA SALDOS ---
+    // --- FORMATEO MONEDA ---
+    const fmtCOP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+    function formatearMoneda(valor, moneda = 'COP') {
+      const num = parseFloat(valor) || 0;
+      if (moneda === 'COP') return fmtCOP.format(num);
+      return `${moneda} ${num.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    // --- VISTA 1: SALDOS ---
     const inputFecha = document.getElementById('fechaCorte');
     inputFecha.value = hoyISO;
-
-    const fmtCOP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
-    function formatearMoneda(valor, moneda) {
-      if (moneda === 'COP') return fmtCOP.format(valor);
-      return `${moneda} ${valor.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
 
     async function cargarSaldos() {
       const contenedor = document.getElementById('contenedorCuentas');
@@ -381,43 +489,31 @@
     document.getElementById('btnConsultarSaldos').addEventListener('click', cargarSaldos);
     cargarSaldos();
 
-    // --- LÓGICA VISTA REGISTRAR MOVIMIENTO ---
-    function mostrarAlertaReg(texto, tipo = 'success') {
-      const el = document.getElementById('alertaRegistro');
-      el.className = `alert alert-${tipo}`;
-      el.textContent = texto;
-      el.classList.remove('d-none');
-      setTimeout(() => el.classList.add('d-none'), 4500);
-    }
-
-    document.querySelectorAll('#tabsRegistro button').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('#tabsRegistro button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const sub = btn.dataset.subvista;
-        document.getElementById('formSimple').classList.toggle('d-none', sub !== 'simple');
-        document.getElementById('formTransferencia').classList.toggle('d-none', sub !== 'transferencia');
-        document.getElementById('formCompuesto').classList.toggle('d-none', sub !== 'compuesto');
-      });
-    });
-
-    async function inicializarFormularios() {
+    // --- INICIALIZACIÓN DE CATÁLOGOS ---
+    async function inicializarCatalogosYFormularios() {
       catalogos = await obtenerCatalogosWeb();
 
-      // Poblar Beneficiarios
       const optsBen = catalogos.beneficiarios.map(b => `<option value="${b}">${b}</option>`).join('');
+      const optsCuentas = catalogos.cuentas.map(c => `<option value="${c}">${c}</option>`).join('');
+      const optsCats = Object.keys(catalogos.relacion).sort().map(c => `<option value="${c}">${c}</option>`).join('');
+
+      // Formularios de registro
       document.getElementById('txBeneficiario').innerHTML =
         `<option value="">-- Seleccionar --</option><option value="NUEVO" class="fw-bold text-primary">➕ -- AGREGAR NUEVO --</option>${optsBen}`;
       document.getElementById('cmpBen').innerHTML = `<option value="">-- Seleccionar --</option>${optsBen}`;
-
-      // Poblar Cuentas
-      const optsCuentas = catalogos.cuentas.map(c => `<option value="${c}">${c}</option>`).join('');
       document.getElementById('txCuenta').innerHTML = `<option value="">-- Seleccionar --</option>${optsCuentas}`;
       document.getElementById('trOrigen').innerHTML = `<option value="">-- Origen --</option>${optsCuentas}`;
       document.getElementById('trDestino').innerHTML = `<option value="">-- Destino --</option>${optsCuentas}`;
       document.getElementById('cmpCuenta').innerHTML = `<option value="">-- Seleccionar --</option>${optsCuentas}`;
 
-      // Fechas por defecto
+      // Filtros de Historial
+      document.getElementById('histCuenta').innerHTML = `<option value="">-- Todas las Cuentas --</option>${optsCuentas}`;
+      document.getElementById('histBen').innerHTML = `<option value="">-- Todos los Beneficiarios --</option>${optsBen}`;
+      document.getElementById('histCat').innerHTML = `<option value="">-- Todas las Categorías --</option>${optsCats}`;
+      document.getElementById('histDesde').value = primerDiaMesISO;
+      document.getElementById('histHasta').value = hoyISO;
+
+      // Fechas registro
       document.getElementById('txFecha').value = hoyISO;
       document.getElementById('trFecha').value = hoyISO;
       document.getElementById('cmpFecha').value = hoyISO;
@@ -427,7 +523,43 @@
       agregarPartidaCompuesta();
     }
 
-    // --- SUBVISTA A: TRANSACCIÓN SIMPLE ---
+    // --- VISTA 2: REGISTRAR / EDITAR ---
+    function mostrarAlertaReg(texto, tipo = 'success') {
+      const el = document.getElementById('alertaRegistro');
+      el.className = `alert alert-${tipo}`;
+      el.textContent = texto;
+      el.classList.remove('d-none');
+      setTimeout(() => el.classList.add('d-none'), 4500);
+    }
+
+    function seleccionarSubvistaRegistro(sub) {
+      document.querySelectorAll('#tabsRegistro button').forEach(b => b.classList.toggle('active', b.dataset.subvista === sub));
+      document.getElementById('formSimple').classList.toggle('d-none', sub !== 'simple');
+      document.getElementById('formTransferencia').classList.toggle('d-none', sub !== 'transferencia');
+      document.getElementById('formCompuesto').classList.toggle('d-none', sub !== 'compuesto');
+    }
+
+    document.querySelectorAll('#tabsRegistro button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (idEnEdicion) return; // Evitar cambiar tipo de serie mientras se edita
+        seleccionarSubvistaRegistro(btn.dataset.subvista);
+      });
+    });
+
+    function salirModoEdicion() {
+      idEnEdicion = null;
+      document.getElementById('bannerEdicion').classList.add('d-none');
+      document.getElementById('btnGuardarSimple').textContent = 'Guardar Transacción';
+      document.getElementById('btnGuardarTr').textContent = 'Registrar Transferencia';
+      document.getElementById('btnGuardarCompuesto').textContent = 'Guardar Asiento Compuesto';
+    }
+
+    document.getElementById('btnCancelarEdicion').addEventListener('click', () => {
+      salirModoEdicion();
+      activarVista('historial');
+    });
+
+    // Subvista A: Simple
     function filtrarCategoriasSimple() {
       const tipo = document.getElementById('txTipo').value;
       const sel = document.getElementById('txCategoria');
@@ -454,29 +586,23 @@
     document.getElementById('txSubcategoria').addEventListener('change', (e) => {
       document.getElementById('boxNuevaSub').classList.toggle('d-none', e.target.value !== 'NUEVA_SUB');
     });
-
     document.getElementById('txCuenta').addEventListener('change', (e) => {
       document.getElementById('txMonedaBadge').textContent = catalogos.mapaCuentas[e.target.value] || 'COP';
       cargarSugerenciasBen();
     });
 
     async function cargarSugerenciasBen() {
+      if (idEnEdicion) return;
       const ben = document.getElementById('txBeneficiario').value;
       const cuenta = document.getElementById('txCuenta').value;
       document.getElementById('boxNuevoBen').classList.toggle('d-none', ben !== 'NUEVO');
 
       const boxSug = document.getElementById('boxSugerencias');
       const lista = document.getElementById('listaSugerencias');
-      if (!ben || ben === 'NUEVO') {
-        boxSug.classList.add('d-none');
-        return;
-      }
+      if (!ben || ben === 'NUEVO') { boxSug.classList.add('d-none'); return; }
 
       const resultados = await obtenerSugerenciasBeneficiarioWeb(ben, cuenta);
-      if (resultados.length === 0) {
-        boxSug.classList.add('d-none');
-        return;
-      }
+      if (resultados.length === 0) { boxSug.classList.add('d-none'); return; }
 
       lista.innerHTML = '';
       resultados.forEach(res => {
@@ -512,8 +638,10 @@
         const ben = document.getElementById('txBeneficiario').value;
         const cat = document.getElementById('txCategoria').value;
         const sub = document.getElementById('txSubcategoria').value;
+        const estabaEditando = Boolean(idEnEdicion);
 
         const msg = await guardarMovimientoWeb({
+          id: idEnEdicion || '',
           fecha: document.getElementById('txFecha').value,
           beneficiario: ben === 'NUEVO' ? document.getElementById('txNuevoBen').value.trim() : ben,
           tipo: document.getElementById('txTipo').value,
@@ -525,19 +653,25 @@
           memo: document.getElementById('txMemo').value.trim()
         });
 
-        mostrarAlertaReg(msg, 'success');
         document.getElementById('txMonto').value = '';
         document.getElementById('txMemo').value = '';
-        catalogos = await obtenerCatalogosWeb();
+        salirModoEdicion();
+
+        if (estabaEditando) {
+          await activarVista('historial');
+          await ejecutarBusquedaHistorial();
+        } else {
+          mostrarAlertaReg(msg, 'success');
+        }
       } catch (err) {
         mostrarAlertaReg('Error: ' + err.message, 'danger');
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Guardar Transacción';
+        btn.textContent = idEnEdicion ? 'Confirmar Cambios' : 'Guardar Transacción';
       }
     });
 
-    // --- SUBVISTA B: TRANSFERENCIA ---
+    // Subvista B: Transferencia
     function chequearMonedasTr() {
       const c1 = document.getElementById('trOrigen').value;
       const c2 = document.getElementById('trDestino').value;
@@ -570,8 +704,10 @@
         const m2 = catalogos.mapaCuentas[c2] || 'COP';
         const montoOr = document.getElementById('trMontoOrigen').value;
         const montoDes = (m1 === m2) ? montoOr : document.getElementById('trMontoDestino').value;
+        const estabaEditando = Boolean(idEnEdicion);
 
         const msg = await guardarMovimientoWeb({
+          id: idEnEdicion || '',
           fecha: document.getElementById('trFecha').value,
           cuentaOrigen: c1,
           monedaOrigen: m1,
@@ -582,24 +718,30 @@
           nota: document.getElementById('trNota').value.trim()
         });
 
-        mostrarAlertaReg(msg, 'success');
         document.getElementById('trMontoOrigen').value = '';
         document.getElementById('trMontoDestino').value = '';
         document.getElementById('trNota').value = '';
+        salirModoEdicion();
+
+        if (estabaEditando) {
+          await activarVista('historial');
+          await ejecutarBusquedaHistorial();
+        } else {
+          mostrarAlertaReg(msg, 'success');
+        }
       } catch (err) {
         mostrarAlertaReg('Error: ' + err.message, 'danger');
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Registrar Transferencia';
+        btn.textContent = idEnEdicion ? 'Confirmar Cambios' : 'Registrar Transferencia';
       }
     });
 
-    // --- SUBVISTA C: ASIENTO COMPUESTO ---
+    // Subvista C: Asiento Compuesto
     document.getElementById('cmpCuenta').addEventListener('change', (e) => {
       document.getElementById('cmpMoneda').value = catalogos.mapaCuentas[e.target.value] || '';
       validarCuadreCompuesto();
     });
-
     document.getElementById('cmpTipo').addEventListener('change', () => {
       const tipo = document.getElementById('cmpTipo').value;
       const inp = document.getElementById('cmpMontoRef');
@@ -667,7 +809,6 @@
 
       document.getElementById('contenedorPartidas').insertAdjacentHTML('beforeend', html);
       const card = document.getElementById(`p-${id}`);
-
       const selTipo = card.querySelector('.p-tipo');
       const selCat = card.querySelector('.p-cat');
       const selSub = card.querySelector('.p-sub');
@@ -712,10 +853,12 @@
       refrescarCatsPartida();
 
       if (datosP) {
-        selTipo.value = datosP.tipo || 'GASTO';
+        let tipoNorm = (datosP.tipo || 'GASTO').toUpperCase();
+        if (tipoNorm === 'EGRESO') tipoNorm = 'GASTO';
+        selTipo.value = tipoNorm;
         refrescarCatsPartida();
         if (datosP.beneficiario) card.querySelector('.p-ben').value = datosP.beneficiario;
-        if (datosP.tipo === 'TRANSFERENCIA') {
+        if (tipoNorm === 'TRANSFERENCIA') {
           card.querySelector('.p-dest').value = datosP.cuentaDestino || '';
           if (datosP.montoDivisa) card.querySelector('.p-divisa').value = Math.abs(datosP.montoDivisa);
         } else {
@@ -758,6 +901,7 @@
 
       try {
         const benPrincipal = document.getElementById('cmpBen').value;
+        const estabaEditando = Boolean(idEnEdicion);
         const cabecera = {
           fecha: document.getElementById('cmpFecha').value,
           tipoCabecera: document.getElementById('cmpTipo').value,
@@ -787,33 +931,38 @@
           return p;
         });
 
-        const msg = await guardarMovimientoWeb({ cabecera, partidas });
-        mostrarAlertaReg(msg, 'success');
+        const msg = await guardarMovimientoWeb({ id: idEnEdicion || '', cabecera, partidas });
         document.getElementById('contenedorPartidas').innerHTML = '';
         document.getElementById('cmpMontoRef').value = '';
         agregarPartidaCompuesta();
         validarCuadreCompuesto();
+        salirModoEdicion();
+
+        if (estabaEditando) {
+          await activarVista('historial');
+          await ejecutarBusquedaHistorial();
+        } else {
+          mostrarAlertaReg(msg, 'success');
+        }
       } catch (err) {
         mostrarAlertaReg('Error: ' + err.message, 'danger');
       } finally {
-        btn.textContent = 'Guardar Asiento Compuesto';
+        btn.textContent = idEnEdicion ? 'Actualizar Asiento' : 'Guardar Asiento Compuesto';
       }
     });
 
-    // --- PLANTILLAS EN SUPABASE ---
+    // Plantillas
     async function refrescarPlantillas() {
       const nombres = await obtenerPlantillasWeb();
       const sel = document.getElementById('selPlantillas');
       sel.innerHTML = '<option value="">-- Mis Plantillas --</option>';
       nombres.forEach(n => sel.add(new Option(n, n)));
     }
-
     document.getElementById('btnCargarPlantilla').addEventListener('click', async () => {
       const nombre = document.getElementById('selPlantillas').value;
       if (!nombre) return;
       const datos = await cargarPlantillaWeb(nombre);
       if (!datos) return;
-
       if (datos.cabecera) {
         if (datos.cabecera.tipoCabecera) document.getElementById('cmpTipo').value = datos.cabecera.tipoCabecera;
         document.getElementById('cmpBen').value = datos.cabecera.beneficiario || '';
@@ -825,11 +974,9 @@
       (datos.partidas || []).forEach(p => agregarPartidaCompuesta(p));
       validarCuadreCompuesto();
     });
-
     document.getElementById('btnGuardarPlantilla').addEventListener('click', async () => {
       const nombre = document.getElementById('txtNombrePlantilla').value.trim();
       if (!nombre) return mostrarAlertaReg('Escribe un nombre para la plantilla.', 'warning');
-
       const cabecera = {
         tipoCabecera: document.getElementById('cmpTipo').value,
         beneficiario: document.getElementById('cmpBen').value,
@@ -847,13 +994,11 @@
         memo: card.querySelector('.p-memo').value,
         monto: card.querySelector('.p-monto').value
       }));
-
       const msg = await guardarPlantillaWeb(nombre, { cabecera, partidas });
       mostrarAlertaReg(msg, 'success');
       document.getElementById('txtNombrePlantilla').value = '';
       await refrescarPlantillas();
     });
-
     document.getElementById('btnBorrarPlantilla').addEventListener('click', async () => {
       const nombre = document.getElementById('selPlantillas').value;
       if (!nombre || !confirm(`¿Eliminar la plantilla "${nombre}"?`)) return;
@@ -861,6 +1006,281 @@
       mostrarAlertaReg(msg, 'info');
       await refrescarPlantillas();
     });
+
+    // --- VISTA 3: HISTORIAL Y CONCILIACIÓN ---
+    const chkModoConc = document.getElementById('chkModoConciliacion');
+    const panelConc = document.getElementById('panelConciliacion');
+
+    chkModoConc.addEventListener('change', () => {
+      const cuenta = document.getElementById('histCuenta').value;
+      const desde = document.getElementById('histDesde').value;
+      const hasta = document.getElementById('histHasta').value;
+
+      if (chkModoConc.checked && (!cuenta || !desde || !hasta)) {
+        alert('⚠️ El Modo Conciliación requiere seleccionar: Cuenta, Fecha Desde y Fecha Hasta.');
+        chkModoConc.checked = false;
+        return;
+      }
+
+      panelConc.classList.toggle('d-none', !chkModoConc.checked);
+      document.getElementById('chkMarcarTodos').checked = false;
+      ejecutarBusquedaHistorial();
+    });
+
+    async function ejecutarBusquedaHistorial() {
+      const modoConc = chkModoConc.checked;
+      const filtros = {
+        inicio: document.getElementById('histDesde').value,
+        fin: document.getElementById('histHasta').value,
+        cuenta: document.getElementById('histCuenta').value,
+        beneficiario: document.getElementById('histBen').value,
+        categoria: document.getElementById('histCat').value
+      };
+
+      if (modoConc && (!filtros.cuenta || !filtros.inicio || !filtros.fin)) {
+        alert('⚠️ El Modo Conciliación requiere seleccionar: Cuenta, Fecha Desde y Fecha Hasta.');
+        return;
+      }
+
+      const listaDiv = document.getElementById('listaHistorial');
+      listaDiv.innerHTML = '<div class="text-center text-muted py-4">🔍 Buscando registros...</div>';
+
+      try {
+        movimientosHistorial = await buscarHistorialWeb(filtros);
+
+        if (movimientosHistorial.length === 0) {
+          listaDiv.innerHTML = '<div class="text-center text-muted py-4">Sin resultados para los filtros aplicados.</div>';
+          if (modoConc) await actualizarPanelConciliacion();
+          return;
+        }
+
+        let grupoIdActual = null;
+        let indiceGrupo = 0;
+        listaDiv.innerHTML = '';
+
+        movimientosHistorial.forEach((item, index) => {
+          const esTr = item.tipo === 'Transferencia';
+          const esAm = item.memo === 'Asiento Compuesto';
+          const strId = String(item.idTransaccion || '').trim();
+          const esParteDeDesglose = strId.startsWith('2') || strId.startsWith('3');
+
+          if (esParteDeDesglose && item.idTransaccion !== grupoIdActual) {
+            grupoIdActual = item.idTransaccion;
+            indiceGrupo++;
+          }
+
+          let colorFondo = '#ffffff';
+          if (esParteDeDesglose) {
+            colorFondo = (indiceGrupo % 2 === 0) ? '#dbe6f6' : '#ebdbf6';
+          }
+
+          const colorBorde = esTr ? '#1a73e8' : esAm ? '#9334e6' : (item.monto < 0) ? '#dc3545' : '#198754';
+          const signo = item.monto < 0 ? '-' : '+';
+          const montoTxt = `${signo}${formatearMoneda(Math.abs(item.monto), item.moneda)}`;
+          const textoMontoFinal = esAm ? `** ${montoTxt} **` : montoTxt;
+
+          const casillaHTML = modoConc
+            ? `<input type="checkbox" class="form-check-input chk-item-conc" data-idx="${index}" ${item.conciliado ? 'checked' : ''} style="transform: scale(1.3);">`
+            : (item.conciliado ? '<span title="Conciliado">✅</span>' : '<span style="opacity:0.3;" title="No conciliado">⬜</span>');
+
+          const btnToggle = esAm
+            ? `<button type="button" class="btn btn-sm btn-outline-secondary btn-toggle-hijos" data-padre="${item.idTransaccion}">👁️ Desglose</button>`
+            : '';
+
+          const card = document.createElement('div');
+          card.className = `card hist-card p-3 shadow-sm ${item.conciliado && modoConc ? 'fila-conciliada' : ''}`;
+          card.style.backgroundColor = colorFondo;
+          card.style.borderLeft = `6px solid ${colorBorde}`;
+          if (esParteDeDesglose && !esAm) {
+            card.dataset.hijoDe = item.idTransaccion;
+          }
+
+          card.innerHTML = `
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div class="d-flex align-items-center gap-2">
+                ${casillaHTML}
+                ${btnToggle}
+                <button type="button" class="btn btn-sm btn-outline-primary btn-editar-tx" data-idtx="${item.idTransaccion}">✏️</button>
+                <button type="button" class="btn btn-sm btn-outline-danger btn-borrar-tx" data-idtx="${item.idTransaccion}">🗑️</button>
+                <div class="ms-2">
+                  <div class="small text-muted font-monospace">ID: ${item.idTransaccion}</div>
+                  <div>
+                    <strong>${item.fecha}</strong> | ${item.beneficiario}
+                    <span class="badge ms-1" style="background:${colorBorde};">${item.tipo}</span>
+                  </div>
+                  <div class="small text-muted">
+                    <strong>${item.cuenta}</strong> — ${item.categoria || 'Sin categoría'} ${item.subcategoria ? '→ ' + item.subcategoria : ''}
+                    ${item.memo ? `<span class="badge bg-light text-dark border ms-1">${item.memo}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+              <div class="fw-bold fs-5 text-end" style="color:${colorBorde};">
+                ${textoMontoFinal}
+              </div>
+            </div>`;
+
+          listaDiv.appendChild(card);
+        });
+
+        // Eventos delegados de tarjetas
+        listaDiv.querySelectorAll('.chk-item-conc').forEach(chk => {
+          chk.addEventListener('change', () => {
+            const idx = parseInt(chk.dataset.idx, 10);
+            movimientosHistorial[idx].conciliado = chk.checked;
+            chk.closest('.hist-card').classList.toggle('fila-conciliada', chk.checked);
+            recalcularTotalesConciliacion();
+          });
+        });
+
+        listaDiv.querySelectorAll('.btn-toggle-hijos').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const padre = btn.dataset.padre;
+            const hijos = listaDiv.querySelectorAll(`[data-hijo-de="${padre}"]`);
+            if (hijos.length === 0) return;
+            const ocultos = hijos[0].classList.contains('d-none');
+            hijos.forEach(h => h.classList.toggle('d-none', !ocultos));
+            btn.textContent = ocultos ? '👁️ Desglose' : '🙈 Oculto';
+          });
+        });
+
+        listaDiv.querySelectorAll('.btn-borrar-tx').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const idTx = btn.dataset.idtx;
+            if (!confirm(`¿Eliminar por completo la transacción ${idTx}?`)) return;
+            await eliminarMovimientoWeb(idTx);
+            await ejecutarBusquedaHistorial();
+          });
+        });
+
+        listaDiv.querySelectorAll('.btn-editar-tx').forEach(btn => {
+          btn.addEventListener('click', () => abrirEditorEnWeb(btn.dataset.idtx));
+        });
+
+        if (modoConc) await actualizarPanelConciliacion();
+      } catch (err) {
+        listaDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+      }
+    }
+
+    document.getElementById('btnBuscarHist').addEventListener('click', ejecutarBusquedaHistorial);
+
+    async function actualizarPanelConciliacion() {
+      const cuenta = document.getElementById('histCuenta').value;
+      const desde = document.getElementById('histDesde').value;
+      const hasta = document.getElementById('histHasta').value;
+      if (!cuenta || !desde || !hasta) return;
+
+      const moneda = catalogos.mapaCuentas[cuenta] || 'COP';
+      const saldos = await obtenerSaldosConciliacionWeb(cuenta, desde, hasta);
+      saldoFinalSistemaNum = saldos.final;
+
+      document.getElementById('concSaldoInicial').textContent = formatearMoneda(saldos.inicial, moneda);
+      document.getElementById('concSaldoFinal').textContent = formatearMoneda(saldos.final, moneda);
+      recalcularTotalesConciliacion();
+    }
+
+    function recalcularTotalesConciliacion() {
+      const cuenta = document.getElementById('histCuenta').value;
+      const moneda = catalogos.mapaCuentas[cuenta] || 'COP';
+      const saldoBanco = parseFloat(document.getElementById('concSaldoBanco').value) || 0;
+      const dif = saldoFinalSistemaNum - saldoBanco;
+
+      const elDif = document.getElementById('concDiferencia');
+      elDif.textContent = formatearMoneda(dif, moneda);
+      elDif.className = Math.abs(dif) < 0.01 ? 'fw-bold fs-5 text-success' : 'fw-bold fs-5 text-danger';
+
+      const sumaMarcados = movimientosHistorial
+        .filter(m => m.conciliado)
+        .reduce((acc, m) => acc + m.monto, 0);
+      document.getElementById('concSumaMarcados').textContent = formatearMoneda(sumaMarcados, moneda);
+    }
+
+    document.getElementById('concSaldoBanco').addEventListener('input', recalcularTotalesConciliacion);
+
+    document.getElementById('chkMarcarTodos').addEventListener('change', (e) => {
+      const marcado = e.target.checked;
+      document.querySelectorAll('.chk-item-conc').forEach(chk => {
+        chk.checked = marcado;
+        const idx = parseInt(chk.dataset.idx, 10);
+        movimientosHistorial[idx].conciliado = marcado;
+        chk.closest('.hist-card').classList.toggle('fila-conciliada', marcado);
+      });
+      recalcularTotalesConciliacion();
+    });
+
+    document.getElementById('btnGuardarConc').addEventListener('click', async () => {
+      const btn = document.getElementById('btnGuardarConc');
+      const cambios = movimientosHistorial.map(m => ({ idFila: m.idFila, estado: m.conciliado }));
+      btn.disabled = true;
+      btn.textContent = '⏳ Guardando...';
+      try {
+        const msg = await guardarConciliacionWeb(cambios);
+        alert(msg);
+        await ejecutarBusquedaHistorial();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '💾 Guardar Conciliación';
+      }
+    });
+
+    // --- CARGAR TRANSACCIÓN EXISTENTE EN EL EDITOR ---
+    async function abrirEditorEnWeb(idTx) {
+      const res = await obtenerMovimientoPorIdWeb(idTx);
+      if (!res || !res.filaPrincipal) return alert('No se encontraron los datos de la transacción.');
+
+      idEnEdicion = res.id;
+      await activarVista('registrar');
+
+      document.getElementById('bannerEdicion').classList.remove('d-none');
+      document.getElementById('textoEdicion').textContent = `✏️ Editando transacción ${res.id}`;
+
+      const p = res.filaPrincipal;
+
+      if (res.serie === '1') {
+        seleccionarSubvistaRegistro('simple');
+        document.getElementById('btnGuardarSimple').textContent = 'Confirmar Cambios';
+        document.getElementById('txFecha').value = p.fecha;
+        document.getElementById('txBeneficiario').value = p.beneficiario;
+        document.getElementById('txTipo').value = p.tipo === 'Egreso' ? 'Gasto' : p.tipo;
+        filtrarCategoriasSimple();
+        document.getElementById('txCuenta').value = p.cuenta;
+        document.getElementById('txMonedaBadge').textContent = catalogos.mapaCuentas[p.cuenta] || 'COP';
+        document.getElementById('txMonto').value = Math.abs(p.monto);
+        document.getElementById('txMemo').value = p.memo;
+        document.getElementById('txCategoria').value = p.categoria;
+        filtrarSubSimple();
+        document.getElementById('txSubcategoria').value = p.subcategoria;
+      } else if (res.serie === '2') {
+        seleccionarSubvistaRegistro('transferencia');
+        document.getElementById('btnGuardarTr').textContent = 'Confirmar Cambios';
+        const d = res.desgloses[0] || null;
+        document.getElementById('trFecha').value = p.fecha;
+        document.getElementById('trNota').value = p.memo || '';
+        document.getElementById('trOrigen').value = p.cuenta;
+        document.getElementById('trMontoOrigen').value = Math.abs(p.monto);
+        if (d) {
+          document.getElementById('trDestino').value = d.cuenta;
+          document.getElementById('trMontoDestino').value = Math.abs(d.monto);
+        }
+        chequearMonedasTr();
+      } else if (res.serie === '3') {
+        seleccionarSubvistaRegistro('compuesto');
+        document.getElementById('btnGuardarCompuesto').textContent = 'Actualizar Asiento';
+        const montoRef = parseFloat(p.montoRef || p.monto);
+        document.getElementById('cmpFecha').value = p.fecha;
+        document.getElementById('cmpTipo').value = montoRef < 0 ? 'GASTO' : 'INGRESO';
+        document.getElementById('cmpBen').value = p.beneficiario;
+        document.getElementById('cmpCuenta').value = p.cuenta;
+        document.getElementById('cmpMoneda').value = catalogos.mapaCuentas[p.cuenta] || '';
+        document.getElementById('cmpMontoRef').value = montoRef;
+
+        document.getElementById('contenedorPartidas').innerHTML = '';
+        res.desgloses.forEach(part => agregarPartidaCompuesta(part));
+        validarCuadreCompuesto();
+      }
+    }
   </script>
 </body>
 </html>

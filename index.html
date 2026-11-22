@@ -19,6 +19,29 @@
       transition: transform 0.1s ease;
     }
     .cuenta-item:hover { transform: translateY(-1px); }
+    .form-card {
+      max-width: 680px;
+      margin: auto;
+      border-radius: 12px;
+      border: none;
+    }
+    .partida-card {
+      border-left: 6px solid #dc3545;
+      border-radius: 8px;
+      position: relative;
+    }
+    .partida-card.ingreso { border-left-color: #198754; }
+    .partida-card.transf { border-left-color: #0d6efd; }
+    .btn-del-partida {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      padding: 0;
+      line-height: 1;
+    }
   </style>
 </head>
 <body>
@@ -26,14 +49,14 @@
   <!-- Barra de Navegación -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
     <div class="container">
-      <a class="navbar-brand" href="#">Finanzas Personales</a>
+      <a class="navbar-brand" href="#" data-vista="saldos">Finanzas Personales</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="menuPrincipal">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item"><a class="nav-link active" href="#saldos">Saldos</a></li>
-          <li class="nav-item"><a class="nav-link disabled" href="#">Nueva Transacción</a></li>
+          <li class="nav-item"><a class="nav-link active" href="#" data-vista="saldos">Saldos</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" data-vista="registrar">Registrar Movimiento</a></li>
           <li class="nav-item"><a class="nav-link disabled" href="#">Historial</a></li>
           <li class="nav-item"><a class="nav-link disabled" href="#">Gastos</a></li>
           <li class="nav-item"><a class="nav-link disabled" href="#">Configuración</a></li>
@@ -46,33 +69,250 @@
     </div>
   </nav>
 
-  <!-- Contenedor Principal -->
   <main class="container pb-5">
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-      <h5 class="fw-bold text-dark mb-0">Resumen de Saldos</h5>
-      <div class="d-flex align-items-center gap-2">
-        <label for="fechaCorte" class="small text-muted mb-0">Corte:</label>
-        <input type="date" id="fechaCorte" class="form-control form-control-sm" style="width: 155px;">
-        <button id="btnConsultarSaldos" class="btn btn-primary btn-sm">Actualizar</button>
+
+    <!-- =================================================================== -->
+    <!-- VISTA 1: RESUMEN DE SALDOS                                          -->
+    <!-- =================================================================== -->
+    <section id="vista-saldos">
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <h5 class="fw-bold text-dark mb-0">Resumen de Saldos</h5>
+        <div class="d-flex align-items-center gap-2">
+          <label for="fechaCorte" class="small text-muted mb-0">Corte:</label>
+          <input type="date" id="fechaCorte" class="form-control form-control-sm" style="width: 155px;">
+          <button id="btnConsultarSaldos" class="btn btn-primary btn-sm">Actualizar</button>
+        </div>
       </div>
-    </div>
 
-    <!-- Tarjeta Patrimonio Total COP -->
-    <div class="card card-total p-4 mb-4 shadow-sm text-center">
-      <div class="small text-uppercase opacity-75">Patrimonio Neto Consolidado (COP)</div>
-      <h2 id="totalConsolidado" class="fw-bold mb-0 mt-1">$ 0</h2>
-    </div>
+      <div class="card card-total p-4 mb-4 shadow-sm text-center">
+        <div class="small text-uppercase opacity-75">Patrimonio Neto Consolidado (COP)</div>
+        <h2 id="totalConsolidado" class="fw-bold mb-0 mt-1">$ 0</h2>
+      </div>
 
-    <!-- Lista de Cuentas -->
-    <div id="contenedorCuentas" class="d-flex flex-column gap-2">
-      <div class="text-center text-muted py-4">Cargando saldos desde Supabase...</div>
-    </div>
+      <div id="contenedorCuentas" class="d-flex flex-column gap-2">
+        <div class="text-center text-muted py-4">Cargando saldos desde Supabase...</div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- VISTA 2: REGISTRAR MOVIMIENTO (SIMPLE / TRANSFERENCIA / COMPUESTO)  -->
+    <!-- =================================================================== -->
+    <section id="vista-registrar" class="d-none">
+      <div class="card form-card shadow-sm p-4 bg-white">
+        <!-- Selector de Tipo de Formulario -->
+        <ul class="nav nav-pills nav-fill mb-4 bg-light p-1 rounded" id="tabsRegistro">
+          <li class="nav-item">
+            <button class="nav-link active fw-semibold" data-subvista="simple" type="button">📝 Transacción</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link fw-semibold" data-subvista="transferencia" type="button">🔄 Transferencia</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link fw-semibold" data-subvista="compuesto" type="button">📊 Desglose</button>
+          </li>
+        </ul>
+
+        <div id="alertaRegistro" class="alert d-none" role="alert"></div>
+
+        <!-- SUBVISTA A: TRANSACCIÓN SIMPLE (SERIE 1) -->
+        <form id="formSimple">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Fecha</label>
+              <input type="date" id="txFecha" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Tipo de Movimiento</label>
+              <select id="txTipo" class="form-select" required>
+                <option value="Gasto" selected>📉 Gasto (-)</option>
+                <option value="Ingreso">📈 Ingreso (+)</option>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small fw-bold">Beneficiario</label>
+              <select id="txBeneficiario" class="form-select" required></select>
+            </div>
+
+            <div id="boxSugerencias" class="col-12 d-none">
+              <div class="p-2 rounded bg-primary-subtle border border-primary-subtle">
+                <div class="small fw-bold text-primary mb-1">Sugerencias recientes (clic para aplicar):</div>
+                <div id="listaSugerencias" class="d-flex flex-column gap-1"></div>
+              </div>
+            </div>
+
+            <div id="boxNuevoBen" class="col-12 d-none">
+              <label class="form-label small fw-bold text-primary">Nombre del Nuevo Beneficiario</label>
+              <input type="text" id="txNuevoBen" class="form-control" placeholder="Escribe el nombre...">
+            </div>
+
+            <div class="col-md-7">
+              <label class="form-label small fw-bold">Cuenta</label>
+              <select id="txCuenta" class="form-select" required></select>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label small fw-bold">Monto</label>
+              <div class="input-group">
+                <span id="txMonedaBadge" class="input-group-text fw-bold">COP</span>
+                <input type="number" id="txMonto" class="form-control" step="0.01" placeholder="0.00" required>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Categoría</label>
+              <select id="txCategoria" class="form-select" required></select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold">Subcategoría</label>
+              <select id="txSubcategoria" class="form-select"></select>
+            </div>
+
+            <div id="boxNuevaCat" class="col-md-6 d-none">
+              <label class="form-label small fw-bold text-primary">Nueva Categoría</label>
+              <input type="text" id="txNuevaCat" class="form-control" placeholder="Ej: Mascotas">
+            </div>
+            <div id="boxNuevaSub" class="col-md-6 d-none">
+              <label class="form-label small fw-bold text-primary">Nueva Subcategoría</label>
+              <input type="text" id="txNuevaSub" class="form-control" placeholder="Ej: Veterinario">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small fw-bold">Memorando</label>
+              <input type="text" id="txMemo" class="form-control" placeholder="Nota opcional...">
+            </div>
+
+            <div class="col-12 mt-4">
+              <button type="submit" id="btnGuardarSimple" class="btn btn-primary w-100 fw-bold py-2">
+                Guardar Transacción
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- SUBVISTA B: TRANSFERENCIA (SERIE 2) -->
+        <form id="formTransferencia" class="d-none">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label small fw-bold">Fecha</label>
+              <input type="date" id="trFecha" class="form-control" required>
+            </div>
+
+            <div class="col-md-7">
+              <label class="form-label small fw-bold">Cuenta Origen</label>
+              <select id="trOrigen" class="form-select" required></select>
+            </div>
+            <div class="col-md-5">
+              <label id="lblMontoOrigen" class="form-label small fw-bold">Monto a Retirar</label>
+              <input type="number" id="trMontoOrigen" class="form-control" step="0.01" placeholder="0.00" required>
+            </div>
+
+            <div class="col-md-7">
+              <label class="form-label small fw-bold">Cuenta Destino</label>
+              <select id="trDestino" class="form-select" required></select>
+            </div>
+            <div id="boxMontoDestino" class="col-md-5 d-none">
+              <label id="lblMontoDestino" class="form-label small fw-bold text-primary">Monto a Recibir</label>
+              <input type="number" id="trMontoDestino" class="form-control" step="0.01" placeholder="0.00">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label small fw-bold">Nota / Comentario</label>
+              <input type="text" id="trNota" class="form-control" placeholder="Nota opcional...">
+            </div>
+
+            <div class="col-12 mt-4">
+              <button type="submit" id="btnGuardarTr" class="btn btn-primary w-100 fw-bold py-2">
+                Registrar Transferencia
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- SUBVISTA C: ASIENTO COMPUESTO / DESGLOSE (SERIE 3) -->
+        <div id="formCompuesto" class="d-none">
+          <!-- Plantillas -->
+          <div class="p-3 mb-3 rounded bg-primary-subtle border border-primary">
+            <label class="form-label small fw-bold text-primary">📂 Plantillas Guardadas</label>
+            <div class="input-group input-group-sm mb-2">
+              <select id="selPlantillas" class="form-select">
+                <option value="">-- Mis Plantillas --</option>
+              </select>
+              <button type="button" id="btnCargarPlantilla" class="btn btn-primary">Cargar</button>
+              <button type="button" id="btnBorrarPlantilla" class="btn btn-danger">🗑️</button>
+            </div>
+            <div class="input-group input-group-sm">
+              <input type="text" id="txtNombrePlantilla" class="form-control" placeholder="Nombre para guardar esta estructura...">
+              <button type="button" id="btnGuardarPlantilla" class="btn btn-outline-primary bg-white">Guardar Plantilla</button>
+            </div>
+          </div>
+
+          <!-- Cabecera -->
+          <div class="p-3 mb-3 rounded border bg-light">
+            <div class="row g-2">
+              <div class="col-md-6">
+                <label class="form-label small fw-bold">Fecha</label>
+                <input type="date" id="cmpFecha" class="form-control form-control-sm">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold">Tipo Asiento Principal</label>
+                <select id="cmpTipo" class="form-select form-select-sm">
+                  <option value="GASTO">📉 Egreso / Gasto</option>
+                  <option value="INGRESO">💰 Ingreso</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-bold">Beneficiario Principal</label>
+                <select id="cmpBen" class="form-select form-select-sm"></select>
+              </div>
+              <div class="col-md-8">
+                <label class="form-label small fw-bold">Cuenta Origen / Fuente</label>
+                <select id="cmpCuenta" class="form-select form-select-sm"></select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold">Moneda</label>
+                <input type="text" id="cmpMoneda" class="form-control form-control-sm" readonly>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-bold">Monto Total (Referencia)</label>
+                <input type="number" id="cmpMontoRef" class="form-control form-control-sm" step="0.01" placeholder="Ej: -800000 o 800000">
+              </div>
+            </div>
+          </div>
+
+          <!-- Partidas -->
+          <div id="contenedorPartidas" class="d-flex flex-column gap-3 mb-3"></div>
+
+          <button type="button" id="btnAddPartida" class="btn btn-success btn-sm w-100 fw-bold mb-3">
+            + Añadir Partida Manual
+          </button>
+
+          <div id="boxCuadre" class="alert alert-danger text-end fw-bold py-2 mb-3">
+            Diferencia: $0.00
+          </div>
+
+          <button type="button" id="btnGuardarCompuesto" class="btn btn-primary w-100 fw-bold py-2" disabled>
+            Guardar Asiento Compuesto
+          </button>
+        </div>
+
+      </div>
+    </section>
+
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module">
     import { verificarSesion, cerrarSesion } from './js/auth.js';
     import { obtenerResumenSaldosWeb } from './js/saldos.js';
+    import {
+      obtenerCatalogosWeb,
+      obtenerSugerenciasBeneficiarioWeb,
+      guardarMovimientoWeb,
+      obtenerPlantillasWeb,
+      cargarPlantillaWeb,
+      guardarPlantillaWeb,
+      eliminarPlantillaWeb
+    } from './js/transacciones.js';
 
     const session = await verificarSesion();
     if (!session) throw new Error('Sin sesión');
@@ -80,15 +320,30 @@
     document.getElementById('usuarioEmail').textContent = session.user.email;
     document.getElementById('btnSalir').addEventListener('click', cerrarSesion);
 
-    const inputFecha = document.getElementById('fechaCorte');
-    inputFecha.value = new Date().toISOString().split('T')[0];
+    const hoyISO = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    let catalogos = null;
 
-    const fmtCOP = new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      maximumFractionDigits: 0
+    // --- NAVEGACIÓN ENTRE VISTAS ---
+    document.querySelectorAll('[data-vista]').forEach(link => {
+      link.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const vista = link.dataset.vista;
+        document.querySelectorAll('[data-vista]').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+
+        document.getElementById('vista-saldos').classList.toggle('d-none', vista !== 'saldos');
+        document.getElementById('vista-registrar').classList.toggle('d-none', vista !== 'registrar');
+
+        if (vista === 'saldos') cargarSaldos();
+        if (vista === 'registrar' && !catalogos) await inicializarFormularios();
+      });
     });
 
+    // --- LÓGICA VISTA SALDOS ---
+    const inputFecha = document.getElementById('fechaCorte');
+    inputFecha.value = hoyISO;
+
+    const fmtCOP = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
     function formatearMoneda(valor, moneda) {
       if (moneda === 'COP') return fmtCOP.format(valor);
       return `${moneda} ${valor.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -97,18 +352,13 @@
     async function cargarSaldos() {
       const contenedor = document.getElementById('contenedorCuentas');
       contenedor.innerHTML = '<div class="text-center text-muted py-4">Calculando saldos...</div>';
-
       try {
         const cuentas = await obtenerResumenSaldosWeb(inputFecha.value);
         let totalCOP = 0;
-
         contenedor.innerHTML = cuentas.map(c => {
           totalCOP += c.saldoCOP;
           const colorMonto = c.saldoOriginal < 0 ? 'text-danger' : 'text-success';
-          const subCOP = c.moneda !== 'COP'
-            ? `<div class="text-muted small">≈ ${fmtCOP.format(c.saldoCOP)}</div>`
-            : '';
-
+          const subCOP = c.moneda !== 'COP' ? `<div class="text-muted small">≈ ${fmtCOP.format(c.saldoCOP)}</div>` : '';
           return `
             <div class="card cuenta-item bg-white px-3 py-2 shadow-sm">
               <div class="d-flex justify-content-between align-items-center">
@@ -121,19 +371,496 @@
                   ${subCOP}
                 </div>
               </div>
-            </div>
-          `;
+            </div>`;
         }).join('');
-
         document.getElementById('totalConsolidado').textContent = fmtCOP.format(totalCOP);
       } catch (err) {
-        console.error(err);
-        contenedor.innerHTML = `<div class="alert alert-danger">Error al cargar saldos: ${err.message}</div>`;
+        contenedor.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+      }
+    }
+    document.getElementById('btnConsultarSaldos').addEventListener('click', cargarSaldos);
+    cargarSaldos();
+
+    // --- LÓGICA VISTA REGISTRAR MOVIMIENTO ---
+    function mostrarAlertaReg(texto, tipo = 'success') {
+      const el = document.getElementById('alertaRegistro');
+      el.className = `alert alert-${tipo}`;
+      el.textContent = texto;
+      el.classList.remove('d-none');
+      setTimeout(() => el.classList.add('d-none'), 4500);
+    }
+
+    document.querySelectorAll('#tabsRegistro button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#tabsRegistro button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const sub = btn.dataset.subvista;
+        document.getElementById('formSimple').classList.toggle('d-none', sub !== 'simple');
+        document.getElementById('formTransferencia').classList.toggle('d-none', sub !== 'transferencia');
+        document.getElementById('formCompuesto').classList.toggle('d-none', sub !== 'compuesto');
+      });
+    });
+
+    async function inicializarFormularios() {
+      catalogos = await obtenerCatalogosWeb();
+
+      // Poblar Beneficiarios
+      const optsBen = catalogos.beneficiarios.map(b => `<option value="${b}">${b}</option>`).join('');
+      document.getElementById('txBeneficiario').innerHTML =
+        `<option value="">-- Seleccionar --</option><option value="NUEVO" class="fw-bold text-primary">➕ -- AGREGAR NUEVO --</option>${optsBen}`;
+      document.getElementById('cmpBen').innerHTML = `<option value="">-- Seleccionar --</option>${optsBen}`;
+
+      // Poblar Cuentas
+      const optsCuentas = catalogos.cuentas.map(c => `<option value="${c}">${c}</option>`).join('');
+      document.getElementById('txCuenta').innerHTML = `<option value="">-- Seleccionar --</option>${optsCuentas}`;
+      document.getElementById('trOrigen').innerHTML = `<option value="">-- Origen --</option>${optsCuentas}`;
+      document.getElementById('trDestino').innerHTML = `<option value="">-- Destino --</option>${optsCuentas}`;
+      document.getElementById('cmpCuenta').innerHTML = `<option value="">-- Seleccionar --</option>${optsCuentas}`;
+
+      // Fechas por defecto
+      document.getElementById('txFecha').value = hoyISO;
+      document.getElementById('trFecha').value = hoyISO;
+      document.getElementById('cmpFecha').value = hoyISO;
+
+      filtrarCategoriasSimple();
+      await refrescarPlantillas();
+      agregarPartidaCompuesta();
+    }
+
+    // --- SUBVISTA A: TRANSACCIÓN SIMPLE ---
+    function filtrarCategoriasSimple() {
+      const tipo = document.getElementById('txTipo').value;
+      const sel = document.getElementById('txCategoria');
+      sel.innerHTML = '<option value="">-- Sel --</option><option value="NUEVA_CAT" class="fw-bold text-primary">➕ NUEVA CAT.</option>';
+      Object.keys(catalogos.relacion).sort().forEach(cat => {
+        if (catalogos.tiposCat[cat] === tipo) sel.add(new Option(cat, cat));
+      });
+      filtrarSubSimple();
+    }
+
+    function filtrarSubSimple() {
+      const cat = document.getElementById('txCategoria').value;
+      const sub = document.getElementById('txSubcategoria');
+      document.getElementById('boxNuevaCat').classList.toggle('d-none', cat !== 'NUEVA_CAT');
+      sub.innerHTML = '<option value="">(Ninguna)</option><option value="NUEVA_SUB" class="fw-bold text-primary">➕ NUEVA SUB.</option>';
+      if (cat && catalogos.relacion[cat]) {
+        catalogos.relacion[cat].sort().forEach(s => sub.add(new Option(s, s)));
+      }
+      document.getElementById('boxNuevaSub').classList.add('d-none');
+    }
+
+    document.getElementById('txTipo').addEventListener('change', filtrarCategoriasSimple);
+    document.getElementById('txCategoria').addEventListener('change', filtrarSubSimple);
+    document.getElementById('txSubcategoria').addEventListener('change', (e) => {
+      document.getElementById('boxNuevaSub').classList.toggle('d-none', e.target.value !== 'NUEVA_SUB');
+    });
+
+    document.getElementById('txCuenta').addEventListener('change', (e) => {
+      document.getElementById('txMonedaBadge').textContent = catalogos.mapaCuentas[e.target.value] || 'COP';
+      cargarSugerenciasBen();
+    });
+
+    async function cargarSugerenciasBen() {
+      const ben = document.getElementById('txBeneficiario').value;
+      const cuenta = document.getElementById('txCuenta').value;
+      document.getElementById('boxNuevoBen').classList.toggle('d-none', ben !== 'NUEVO');
+
+      const boxSug = document.getElementById('boxSugerencias');
+      const lista = document.getElementById('listaSugerencias');
+      if (!ben || ben === 'NUEVO') {
+        boxSug.classList.add('d-none');
+        return;
+      }
+
+      const resultados = await obtenerSugerenciasBeneficiarioWeb(ben, cuenta);
+      if (resultados.length === 0) {
+        boxSug.classList.add('d-none');
+        return;
+      }
+
+      lista.innerHTML = '';
+      resultados.forEach(res => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn btn-sm btn-light border text-start';
+        b.innerHTML = `<strong>${res.fecha}</strong>: ${res.cuenta} | $${res.monto} <small class="text-muted">(${res.categoria})</small>`;
+        b.onclick = () => {
+          document.getElementById('txTipo').value = res.tipo;
+          filtrarCategoriasSimple();
+          document.getElementById('txCuenta').value = res.cuenta;
+          document.getElementById('txMonedaBadge').textContent = catalogos.mapaCuentas[res.cuenta] || 'COP';
+          document.getElementById('txMonto').value = res.monto;
+          document.getElementById('txMemo').value = res.memo;
+          document.getElementById('txCategoria').value = res.categoria;
+          filtrarSubSimple();
+          document.getElementById('txSubcategoria').value = res.subcategoria;
+          boxSug.classList.add('d-none');
+        };
+        lista.appendChild(b);
+      });
+      boxSug.classList.remove('d-none');
+    }
+    document.getElementById('txBeneficiario').addEventListener('change', cargarSugerenciasBen);
+
+    document.getElementById('formSimple').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnGuardarSimple');
+      btn.disabled = true;
+      btn.textContent = '⏳ Guardando...';
+
+      try {
+        const ben = document.getElementById('txBeneficiario').value;
+        const cat = document.getElementById('txCategoria').value;
+        const sub = document.getElementById('txSubcategoria').value;
+
+        const msg = await guardarMovimientoWeb({
+          fecha: document.getElementById('txFecha').value,
+          beneficiario: ben === 'NUEVO' ? document.getElementById('txNuevoBen').value.trim() : ben,
+          tipo: document.getElementById('txTipo').value,
+          cuenta: document.getElementById('txCuenta').value,
+          moneda: document.getElementById('txMonedaBadge').textContent,
+          monto: document.getElementById('txMonto').value,
+          categoria: cat === 'NUEVA_CAT' ? document.getElementById('txNuevaCat').value.trim() : cat,
+          subcategoria: sub === 'NUEVA_SUB' ? document.getElementById('txNuevaSub').value.trim() : sub,
+          memo: document.getElementById('txMemo').value.trim()
+        });
+
+        mostrarAlertaReg(msg, 'success');
+        document.getElementById('txMonto').value = '';
+        document.getElementById('txMemo').value = '';
+        catalogos = await obtenerCatalogosWeb();
+      } catch (err) {
+        mostrarAlertaReg('Error: ' + err.message, 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Guardar Transacción';
+      }
+    });
+
+    // --- SUBVISTA B: TRANSFERENCIA ---
+    function chequearMonedasTr() {
+      const c1 = document.getElementById('trOrigen').value;
+      const c2 = document.getElementById('trDestino').value;
+      if (!c1 || !c2) return;
+      const m1 = catalogos.mapaCuentas[c1] || 'COP';
+      const m2 = catalogos.mapaCuentas[c2] || 'COP';
+      document.getElementById('lblMontoOrigen').textContent = `Monto a Retirar (${m1})`;
+      if (m1 !== m2) {
+        document.getElementById('boxMontoDestino').classList.remove('d-none');
+        document.getElementById('lblMontoDestino').textContent = `Monto a Recibir (${m2})`;
+      } else {
+        document.getElementById('boxMontoDestino').classList.add('d-none');
+      }
+    }
+    document.getElementById('trOrigen').addEventListener('change', chequearMonedasTr);
+    document.getElementById('trDestino').addEventListener('change', chequearMonedasTr);
+
+    document.getElementById('formTransferencia').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const c1 = document.getElementById('trOrigen').value;
+      const c2 = document.getElementById('trDestino').value;
+      if (c1 === c2) return mostrarAlertaReg('Origen y destino no pueden ser iguales.', 'warning');
+
+      const btn = document.getElementById('btnGuardarTr');
+      btn.disabled = true;
+      btn.textContent = '⏳ Registrando...';
+
+      try {
+        const m1 = catalogos.mapaCuentas[c1] || 'COP';
+        const m2 = catalogos.mapaCuentas[c2] || 'COP';
+        const montoOr = document.getElementById('trMontoOrigen').value;
+        const montoDes = (m1 === m2) ? montoOr : document.getElementById('trMontoDestino').value;
+
+        const msg = await guardarMovimientoWeb({
+          fecha: document.getElementById('trFecha').value,
+          cuentaOrigen: c1,
+          monedaOrigen: m1,
+          montoOrigen: montoOr,
+          cuentaDestino: c2,
+          monedaDestino: m2,
+          montoDestino: montoDes,
+          nota: document.getElementById('trNota').value.trim()
+        });
+
+        mostrarAlertaReg(msg, 'success');
+        document.getElementById('trMontoOrigen').value = '';
+        document.getElementById('trMontoDestino').value = '';
+        document.getElementById('trNota').value = '';
+      } catch (err) {
+        mostrarAlertaReg('Error: ' + err.message, 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Registrar Transferencia';
+      }
+    });
+
+    // --- SUBVISTA C: ASIENTO COMPUESTO ---
+    document.getElementById('cmpCuenta').addEventListener('change', (e) => {
+      document.getElementById('cmpMoneda').value = catalogos.mapaCuentas[e.target.value] || '';
+      validarCuadreCompuesto();
+    });
+
+    document.getElementById('cmpTipo').addEventListener('change', () => {
+      const tipo = document.getElementById('cmpTipo').value;
+      const inp = document.getElementById('cmpMontoRef');
+      const val = parseFloat(inp.value);
+      if (!isNaN(val) && val !== 0) inp.value = (tipo === 'GASTO') ? -Math.abs(val) : Math.abs(val);
+      validarCuadreCompuesto();
+    });
+    document.getElementById('cmpMontoRef').addEventListener('input', validarCuadreCompuesto);
+
+    function agregarPartidaCompuesta(datosP = null) {
+      const id = Date.now() + Math.floor(Math.random() * 1000);
+      const optsBen = catalogos.beneficiarios.map(b => `<option value="${b}">${b}</option>`).join('');
+      const optsCuentas = catalogos.cuentas.map(c => `<option value="${c}">${c}</option>`).join('');
+
+      const html = `
+        <div class="card partida-card p-3 bg-light shadow-sm" id="p-${id}">
+          <button type="button" class="btn btn-danger btn-del-partida" data-del="${id}">×</button>
+          <div class="row g-2 mb-2">
+            <div class="col-md-5">
+              <label class="form-label small fw-bold">Tipo</label>
+              <select class="form-select form-select-sm p-tipo">
+                <option value="GASTO">📉 Gasto</option>
+                <option value="INGRESO">💰 Ingreso</option>
+                <option value="TRANSFERENCIA">↔️ Transferencia</option>
+              </select>
+            </div>
+            <div class="col-md-7">
+              <label class="form-label small fw-bold">Beneficiario (Opcional)</label>
+              <select class="form-select form-select-sm p-ben">
+                <option value="">-- Usar Principal --</option>${optsBen}
+              </select>
+            </div>
+          </div>
+          <div class="row g-2 mb-2 p-bloque-cat">
+            <div class="col-6">
+              <label class="form-label small fw-bold">Categoría</label>
+              <select class="form-select form-select-sm p-cat"><option value="">-- Sel --</option></select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold">Subcategoría</label>
+              <select class="form-select form-select-sm p-sub"><option value="">--</option></select>
+            </div>
+          </div>
+          <div class="row g-2 mb-2 p-bloque-tr d-none">
+            <div class="col-8">
+              <label class="form-label small fw-bold">Cuenta Destino</label>
+              <select class="form-select form-select-sm p-dest"><option value="">-- Destino --</option>${optsCuentas}</select>
+            </div>
+            <div class="col-4">
+              <label class="form-label small fw-bold">Monto Divisa</label>
+              <input type="number" step="0.01" class="form-control form-control-sm p-divisa" placeholder="Opcional">
+            </div>
+          </div>
+          <div class="row g-2">
+            <div class="col-7">
+              <label class="form-label small fw-bold">Memorando</label>
+              <input type="text" class="form-control form-control-sm p-memo" placeholder="Nota...">
+            </div>
+            <div class="col-5">
+              <label class="form-label small fw-bold">Monto</label>
+              <input type="number" step="0.01" class="form-control form-control-sm p-monto" placeholder="0.00">
+            </div>
+          </div>
+        </div>`;
+
+      document.getElementById('contenedorPartidas').insertAdjacentHTML('beforeend', html);
+      const card = document.getElementById(`p-${id}`);
+
+      const selTipo = card.querySelector('.p-tipo');
+      const selCat = card.querySelector('.p-cat');
+      const selSub = card.querySelector('.p-sub');
+
+      function refrescarCatsPartida() {
+        const t = selTipo.value;
+        card.classList.remove('ingreso', 'transf');
+        if (t === 'INGRESO') card.classList.add('ingreso');
+        if (t === 'TRANSFERENCIA') card.classList.add('transf');
+
+        card.querySelector('.p-bloque-cat').classList.toggle('d-none', t === 'TRANSFERENCIA');
+        card.querySelector('.p-bloque-tr').classList.toggle('d-none', t !== 'TRANSFERENCIA');
+
+        if (t !== 'TRANSFERENCIA') {
+          const target = t === 'INGRESO' ? 'Ingreso' : 'Gasto';
+          selCat.innerHTML = '<option value="">-- Sel --</option>';
+          Object.keys(catalogos.relacion).sort().forEach(c => {
+            if ((catalogos.tiposCat[c] || '').toLowerCase().includes(target.toLowerCase())) {
+              selCat.add(new Option(c, c));
+            }
+          });
+          selSub.innerHTML = '<option value="">--</option>';
+        }
+        validarCuadreCompuesto();
+      }
+
+      selTipo.addEventListener('change', refrescarCatsPartida);
+      selCat.addEventListener('change', () => {
+        selSub.innerHTML = '<option value="">--</option>';
+        if (catalogos.relacion[selCat.value]) {
+          catalogos.relacion[selCat.value].sort().forEach(s => selSub.add(new Option(s, s)));
+        }
+      });
+      card.querySelector('.p-monto').addEventListener('input', validarCuadreCompuesto);
+      card.querySelector('[data-del]').addEventListener('click', () => {
+        if (document.querySelectorAll('.partida-card').length > 1) {
+          card.remove();
+          validarCuadreCompuesto();
+        }
+      });
+
+      refrescarCatsPartida();
+
+      if (datosP) {
+        selTipo.value = datosP.tipo || 'GASTO';
+        refrescarCatsPartida();
+        if (datosP.beneficiario) card.querySelector('.p-ben').value = datosP.beneficiario;
+        if (datosP.tipo === 'TRANSFERENCIA') {
+          card.querySelector('.p-dest').value = datosP.cuentaDestino || '';
+          if (datosP.montoDivisa) card.querySelector('.p-divisa').value = Math.abs(datosP.montoDivisa);
+        } else {
+          selCat.value = datosP.categoria || '';
+          selCat.dispatchEvent(new Event('change'));
+          selSub.value = datosP.subcategoria || '';
+        }
+        card.querySelector('.p-memo').value = datosP.memo || '';
+        card.querySelector('.p-monto').value = Math.abs(parseFloat(datosP.monto) || 0);
+        validarCuadreCompuesto();
       }
     }
 
-    document.getElementById('btnConsultarSaldos').addEventListener('click', cargarSaldos);
-    cargarSaldos();
+    document.getElementById('btnAddPartida').addEventListener('click', () => agregarPartidaCompuesta());
+
+    function validarCuadreCompuesto() {
+      const tipoCab = document.getElementById('cmpTipo').value;
+      const rawRef = parseFloat(document.getElementById('cmpMontoRef').value) || 0;
+      const ref = (tipoCab === 'GASTO') ? -Math.abs(rawRef) : Math.abs(rawRef);
+      if (rawRef !== 0 && rawRef !== ref) document.getElementById('cmpMontoRef').value = ref;
+
+      const totalPartidas = Array.from(document.querySelectorAll('.partida-card')).reduce((acc, card) => {
+        const t = card.querySelector('.p-tipo').value;
+        const val = Math.abs(parseFloat(card.querySelector('.p-monto').value)) || 0;
+        return acc + (t === 'INGRESO' ? val : -val);
+      }, 0);
+
+      const dif = (ref - totalPartidas).toFixed(2);
+      const box = document.getElementById('boxCuadre');
+      box.textContent = `Diferencia: $${dif}`;
+      const ok = Math.abs(parseFloat(dif)) < 0.01 && ref !== 0;
+      box.className = ok ? 'alert alert-success text-end fw-bold py-2 mb-3' : 'alert alert-danger text-end fw-bold py-2 mb-3';
+      document.getElementById('btnGuardarCompuesto').disabled = !ok;
+    }
+
+    document.getElementById('btnGuardarCompuesto').addEventListener('click', async () => {
+      const btn = document.getElementById('btnGuardarCompuesto');
+      btn.disabled = true;
+      btn.textContent = '⏳ Guardando...';
+
+      try {
+        const benPrincipal = document.getElementById('cmpBen').value;
+        const cabecera = {
+          fecha: document.getElementById('cmpFecha').value,
+          tipoCabecera: document.getElementById('cmpTipo').value,
+          beneficiario: benPrincipal,
+          cuenta: document.getElementById('cmpCuenta').value,
+          moneda: document.getElementById('cmpMoneda').value,
+          montoReferencia: document.getElementById('cmpMontoRef').value
+        };
+
+        const partidas = Array.from(document.querySelectorAll('.partida-card')).map(card => {
+          const tipo = card.querySelector('.p-tipo').value;
+          const benEsp = card.querySelector('.p-ben').value;
+          const p = {
+            tipo,
+            beneficiario: (benEsp && benEsp !== benPrincipal) ? benEsp : '',
+            memo: card.querySelector('.p-memo').value.trim(),
+            monto: card.querySelector('.p-monto').value
+          };
+          if (tipo === 'TRANSFERENCIA') {
+            p.cuentaDestino = card.querySelector('.p-dest').value;
+            p.monedaDestino = catalogos.mapaCuentas[p.cuentaDestino] || cabecera.moneda;
+            p.montoDivisa = card.querySelector('.p-divisa').value;
+          } else {
+            p.categoria = card.querySelector('.p-cat').value;
+            p.subcategoria = card.querySelector('.p-sub').value;
+          }
+          return p;
+        });
+
+        const msg = await guardarMovimientoWeb({ cabecera, partidas });
+        mostrarAlertaReg(msg, 'success');
+        document.getElementById('contenedorPartidas').innerHTML = '';
+        document.getElementById('cmpMontoRef').value = '';
+        agregarPartidaCompuesta();
+        validarCuadreCompuesto();
+      } catch (err) {
+        mostrarAlertaReg('Error: ' + err.message, 'danger');
+      } finally {
+        btn.textContent = 'Guardar Asiento Compuesto';
+      }
+    });
+
+    // --- PLANTILLAS EN SUPABASE ---
+    async function refrescarPlantillas() {
+      const nombres = await obtenerPlantillasWeb();
+      const sel = document.getElementById('selPlantillas');
+      sel.innerHTML = '<option value="">-- Mis Plantillas --</option>';
+      nombres.forEach(n => sel.add(new Option(n, n)));
+    }
+
+    document.getElementById('btnCargarPlantilla').addEventListener('click', async () => {
+      const nombre = document.getElementById('selPlantillas').value;
+      if (!nombre) return;
+      const datos = await cargarPlantillaWeb(nombre);
+      if (!datos) return;
+
+      if (datos.cabecera) {
+        if (datos.cabecera.tipoCabecera) document.getElementById('cmpTipo').value = datos.cabecera.tipoCabecera;
+        document.getElementById('cmpBen').value = datos.cabecera.beneficiario || '';
+        document.getElementById('cmpCuenta').value = datos.cabecera.cuenta || '';
+        document.getElementById('cmpMoneda').value = datos.cabecera.moneda || '';
+        document.getElementById('cmpMontoRef').value = datos.cabecera.montoReferencia || '';
+      }
+      document.getElementById('contenedorPartidas').innerHTML = '';
+      (datos.partidas || []).forEach(p => agregarPartidaCompuesta(p));
+      validarCuadreCompuesto();
+    });
+
+    document.getElementById('btnGuardarPlantilla').addEventListener('click', async () => {
+      const nombre = document.getElementById('txtNombrePlantilla').value.trim();
+      if (!nombre) return mostrarAlertaReg('Escribe un nombre para la plantilla.', 'warning');
+
+      const cabecera = {
+        tipoCabecera: document.getElementById('cmpTipo').value,
+        beneficiario: document.getElementById('cmpBen').value,
+        cuenta: document.getElementById('cmpCuenta').value,
+        moneda: document.getElementById('cmpMoneda').value,
+        montoReferencia: document.getElementById('cmpMontoRef').value
+      };
+      const partidas = Array.from(document.querySelectorAll('.partida-card')).map(card => ({
+        tipo: card.querySelector('.p-tipo').value,
+        beneficiario: card.querySelector('.p-ben').value,
+        categoria: card.querySelector('.p-cat').value,
+        subcategoria: card.querySelector('.p-sub').value,
+        cuentaDestino: card.querySelector('.p-dest').value,
+        montoDivisa: card.querySelector('.p-divisa').value,
+        memo: card.querySelector('.p-memo').value,
+        monto: card.querySelector('.p-monto').value
+      }));
+
+      const msg = await guardarPlantillaWeb(nombre, { cabecera, partidas });
+      mostrarAlertaReg(msg, 'success');
+      document.getElementById('txtNombrePlantilla').value = '';
+      await refrescarPlantillas();
+    });
+
+    document.getElementById('btnBorrarPlantilla').addEventListener('click', async () => {
+      const nombre = document.getElementById('selPlantillas').value;
+      if (!nombre || !confirm(`¿Eliminar la plantilla "${nombre}"?`)) return;
+      const msg = await eliminarPlantillaWeb(nombre);
+      mostrarAlertaReg(msg, 'info');
+      await refrescarPlantillas();
+    });
   </script>
 </body>
 </html>

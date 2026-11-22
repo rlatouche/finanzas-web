@@ -60,7 +60,7 @@
           <li class="nav-item"><a class="nav-link" href="#" data-vista="registrar">Registrar Movimiento</a></li>
           <li class="nav-item"><a class="nav-link" href="#" data-vista="historial">Historial</a></li>
           <li class="nav-item"><a class="nav-link disabled" href="#">Gastos</a></li>
-          <li class="nav-item"><a class="nav-link disabled" href="#">Configuración</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" data-vista="configuracion">Configuración</a></li>
         </ul>
         <div class="d-flex align-items-center gap-3">
           <span id="usuarioEmail" class="text-white-50 small"></span>
@@ -387,6 +387,179 @@
       </div>
     </section>
 
+   <!-- =================================================================== -->
+    <!-- VISTA 4: CONFIGURACIÓN (CUENTAS, BENEFICIARIOS Y CATEGORÍAS)        -->
+    <!-- =================================================================== -->
+    <section id="vista-configuracion" class="d-none">
+      <h5 class="fw-bold text-dark mb-3">Configuración de Catálogos</h5>
+
+      <ul class="nav nav-tabs mb-3" id="tabsConfiguracion">
+        <li class="nav-item">
+          <button class="nav-link active fw-semibold" data-tabcfg="cuentas" type="button">💳 Cuentas</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link fw-semibold" data-tabcfg="beneficiarios" type="button">🤝 Beneficiarios</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link fw-semibold" data-tabcfg="categorias" type="button">🏷️ Categorías</button>
+        </li>
+      </ul>
+
+      <!-- SUBPESTAÑA 1: CUENTAS -->
+      <div id="cfg-cuentas" class="card p-3 shadow-sm border-0">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0">Cuentas Bancarias y Efectivo</h6>
+          <button type="button" id="btnNuevaCuenta" class="btn btn-primary btn-sm fw-bold">+ Nueva Cuenta</button>
+        </div>
+        <div id="tablaCuentasCfg" class="table-responsive">
+          <div class="text-center text-muted py-3">Cargando cuentas...</div>
+        </div>
+      </div>
+
+      <!-- SUBPESTAÑA 2: BENEFICIARIOS -->
+      <div id="cfg-beneficiarios" class="card p-3 shadow-sm border-0 d-none">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <h6 class="fw-bold mb-0">Beneficiarios y Comercios</h6>
+          <div class="d-flex gap-2">
+            <input type="text" id="txtFiltroBenCfg" class="form-control form-control-sm" placeholder="Filtrar..." style="width: 190px;">
+            <button type="button" id="btnNuevoBen" class="btn btn-primary btn-sm fw-bold">+ Nuevo</button>
+          </div>
+        </div>
+
+        <button type="button" id="btnFusionarBen" class="btn btn-warning btn-sm w-100 fw-bold mb-2 d-none">
+          ✨ Fusionar Seleccionados
+        </button>
+
+        <div id="tablaBenCfg" class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+          <div class="text-center text-muted py-3">Cargando beneficiarios...</div>
+        </div>
+      </div>
+
+      <!-- SUBPESTAÑA 3: CATEGORÍAS -->
+      <div id="cfg-categorias" class="card p-3 shadow-sm border-0 d-none">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0">Categorías Principales</h6>
+          <button type="button" id="btnNuevaCat" class="btn btn-primary btn-sm fw-bold">+ Nueva Categoría</button>
+        </div>
+        <div id="tablaCatCfg" class="table-responsive">
+          <div class="text-center text-muted py-3">Cargando categorías...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODAL: CREAR / EDITAR CUENTA -->
+    <div class="modal fade" id="modalCuentaCfg" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold text-primary" id="tituloModalCuenta">Nueva Cuenta</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="cfgAccId">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-bold">Institución</label>
+                <input type="text" id="cfgAccInstitucion" class="form-control" list="dlInstituciones" placeholder="Ej: Nu Colombia">
+                <datalist id="dlInstituciones"></datalist>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold">Tipo de Cuenta</label>
+                <select id="cfgAccTipo" class="form-select">
+                  <option value="Ahorros">Ahorros</option>
+                  <option value="Corriente">Corriente</option>
+                  <option value="Tarjeta de Crédito">Tarjeta de Crédito</option>
+                  <option value="Efectivo">Efectivo / Bolsillo</option>
+                  <option value="Inversión">Inversión</option>
+                  <option value="Pasivos">Pasivos</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-bold">Nombre de la Cuenta</label>
+                <input type="text" id="cfgAccNombre" class="form-control" placeholder="Ej: Cuenta Ahorros Principal">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold">Fecha Apertura</label>
+                <input type="date" id="cfgAccFecha" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold">Moneda</label>
+                <select id="cfgAccMoneda" class="form-select"></select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold">Estado</label>
+                <select id="cfgAccEstado" class="form-select">
+                  <option value="Activa">Activa</option>
+                  <option value="Inactiva">Inactiva</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" id="btnGuardarCuentaCfg" class="btn btn-primary fw-bold">Guardar Cuenta</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CREAR / EDITAR BENEFICIARIO -->
+    <div class="modal fade" id="modalBenCfg" tabindex="-1">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold text-primary" id="tituloModalBen">Nuevo Beneficiario</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="cfgBenId">
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Nombre</label>
+              <input type="text" id="cfgBenNombre" class="form-control" placeholder="Comercio o persona...">
+            </div>
+            <div>
+              <label class="form-label small fw-bold">Estado</label>
+              <select id="cfgBenEstado" class="form-select">
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" id="btnGuardarBenCfg" class="btn btn-primary btn-sm fw-bold">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: SUBCATEGORÍAS Y RENOMBRADO DE CATEGORÍA -->
+    <div class="modal fade" id="modalCatDetalleCfg" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <div class="d-flex align-items-center gap-2">
+              <h5 class="modal-title fw-bold mb-0" id="tituloModalCat">📂 Categoría</h5>
+              <button type="button" id="btnRenombrarCat" class="btn btn-sm btn-light">✏️ Renombrar</button>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label small fw-bold text-muted text-uppercase">Subcategorías Registradas</label>
+            <div id="listaSubcatsCfg" class="border rounded mb-3" style="max-height: 260px; overflow-y: auto;"></div>
+
+            <div class="bg-light p-3 rounded border">
+              <label class="form-label small fw-bold">Añadir nueva subcategoría</label>
+              <div class="input-group input-group-sm">
+                <input type="text" id="txtNuevaSubcatCfg" class="form-control" placeholder="Ej: Energía, Agua, Internet...">
+                <button type="button" id="btnAddSubcatCfg" class="btn btn-primary fw-bold">Añadir</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> 
+
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -409,7 +582,20 @@
       guardarConciliacionWeb,
       obtenerSaldosConciliacionWeb
     } from './js/historial.js';
-
+import {
+      obtenerDatosCuentasWeb,
+      obtenerListasConfiguracionWeb,
+      guardarCuentaWeb,
+      obtenerDatosBeneficiariosWeb,
+      guardarBeneficiarioWeb,
+      eliminarBeneficiarioWeb,
+      fusionarBeneficiariosWeb,
+      obtenerCategoriasPrincipalesWeb,
+      obtenerSubcategoriasPorCatWeb,
+      guardarCategoriaWeb,
+      renombrarCategoriaPrincipalWeb,
+      actualizarSubcategoriaMasivoWeb
+    } from './js/configuracion.js';
     const session = await verificarSesion();
     if (!session) throw new Error('Sin sesión');
 
@@ -431,11 +617,13 @@
       document.getElementById('vista-saldos').classList.toggle('d-none', vista !== 'saldos');
       document.getElementById('vista-registrar').classList.toggle('d-none', vista !== 'registrar');
       document.getElementById('vista-historial').classList.toggle('d-none', vista !== 'historial');
+      document.getElementById('vista-configuracion').classList.toggle('d-none', vista !== 'configuracion');
 
       if (!catalogos && (vista === 'registrar' || vista === 'historial')) {
         await inicializarCatalogosYFormularios();
       }
       if (vista === 'saldos') cargarSaldos();
+      if (vista === 'configuracion') await inicializarConfiguracion();
     }
 
     document.querySelectorAll('[data-vista]').forEach(link => {
@@ -1281,6 +1469,385 @@
         validarCuadreCompuesto();
       }
     }
+
+    // --- VISTA 4: CONFIGURACIÓN ---
+    const modalCuentaBS = new bootstrap.Modal(document.getElementById('modalCuentaCfg'));
+    const modalBenBS = new bootstrap.Modal(document.getElementById('modalBenCfg'));
+    const modalCatDetalleBS = new bootstrap.Modal(document.getElementById('modalCatDetalleCfg'));
+
+    let listasCfg = { instituciones: [], monedas: [] };
+    let listaBenCfgCache = [];
+    let catActualCfg = '';
+    let tipoCatActualCfg = 'Gasto';
+
+    async function refrescarCatalogosGlobales() {
+      catalogos = null; // Fuerza recarga al volver a Registrar o Historial
+    }
+
+    document.querySelectorAll('#tabsConfiguracion button').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        document.querySelectorAll('#tabsConfiguracion button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.tabcfg;
+        document.getElementById('cfg-cuentas').classList.toggle('d-none', tab !== 'cuentas');
+        document.getElementById('cfg-beneficiarios').classList.toggle('d-none', tab !== 'beneficiarios');
+        document.getElementById('cfg-categorias').classList.toggle('d-none', tab !== 'categorias');
+
+        if (tab === 'cuentas') await renderCuentasCfg();
+        if (tab === 'beneficiarios') await renderBeneficiariosCfg();
+        if (tab === 'categorias') await renderCategoriasCfg();
+      });
+    });
+
+    async function inicializarConfiguracion() {
+      listasCfg = await obtenerListasConfiguracionWeb();
+      document.getElementById('dlInstituciones').innerHTML =
+        listasCfg.instituciones.map(i => `<option value="${i}">`).join('');
+      document.getElementById('cfgAccMoneda').innerHTML =
+        listasCfg.monedas.map(m => `<option value="${m}">${m}</option>`).join('');
+
+      await renderCuentasCfg();
+    }
+
+    // 1. Cuentas
+    async function renderCuentasCfg() {
+      const cont = document.getElementById('tablaCuentasCfg');
+      cont.innerHTML = '<div class="text-center text-muted py-3">Cargando cuentas...</div>';
+      const cuentas = await obtenerDatosCuentasWeb();
+
+      let html = `
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Institución</th>
+              <th>Nombre / Tipo</th>
+              <th>Moneda</th>
+              <th>Estado</th>
+              <th class="text-end">Editar</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+      cuentas.forEach((c, idx) => {
+        const badge = (c.estado === 'Activa' || c.estado === 'Activo')
+          ? '<span class="badge bg-success-subtle text-success">Activa</span>'
+          : '<span class="badge bg-danger-subtle text-danger">Inactiva</span>';
+        html += `
+          <tr>
+            <td>${c.institucion || '-'}</td>
+            <td><strong>${c.nombre}</strong><br><small class="text-muted">${c.tipo}</small></td>
+            <td><span class="badge bg-light text-dark border">${c.moneda}</span></td>
+            <td>${badge}</td>
+            <td class="text-end">
+              <button type="button" class="btn btn-sm btn-outline-primary btn-edit-acc" data-idx="${idx}">✏️</button>
+            </td>
+          </tr>`;
+      });
+
+      html += '</tbody></table>';
+      cont.innerHTML = html;
+
+      cont.querySelectorAll('.btn-edit-acc').forEach(btn => {
+        btn.addEventListener('click', () => abrirModalCuentaCfg(cuentas[parseInt(btn.dataset.idx, 10)]));
+      });
+    }
+
+    function abrirModalCuentaCfg(datos = null) {
+      const selMoneda = document.getElementById('cfgAccMoneda');
+      if (datos) {
+        document.getElementById('tituloModalCuenta').textContent = 'Editar Cuenta';
+        document.getElementById('cfgAccId').value = datos.idFila;
+        document.getElementById('cfgAccInstitucion').value = datos.institucion;
+        document.getElementById('cfgAccTipo').value = datos.tipo || 'Ahorros';
+        document.getElementById('cfgAccNombre').value = datos.nombre;
+        document.getElementById('cfgAccFecha').value = datos.fechaApertura || '';
+        selMoneda.value = datos.moneda;
+        selMoneda.disabled = true;
+        document.getElementById('cfgAccEstado').value = datos.estado === 'Inactiva' ? 'Inactiva' : 'Activa';
+      } else {
+        document.getElementById('tituloModalCuenta').textContent = 'Nueva Cuenta';
+        document.getElementById('cfgAccId').value = '';
+        document.getElementById('cfgAccInstitucion').value = '';
+        document.getElementById('cfgAccTipo').value = 'Ahorros';
+        document.getElementById('cfgAccNombre').value = '';
+        document.getElementById('cfgAccFecha').value = hoyISO;
+        selMoneda.disabled = false;
+        selMoneda.value = 'COP';
+        document.getElementById('cfgAccEstado').value = 'Activa';
+      }
+      modalCuentaBS.show();
+    }
+
+    document.getElementById('btnNuevaCuenta').addEventListener('click', () => abrirModalCuentaCfg(null));
+
+    document.getElementById('btnGuardarCuentaCfg').addEventListener('click', async () => {
+      const nombre = document.getElementById('cfgAccNombre').value.trim();
+      const institucion = document.getElementById('cfgAccInstitucion').value.trim();
+      if (!nombre || !institucion) return alert('Completa al menos Institución y Nombre.');
+
+      const btn = document.getElementById('btnGuardarCuentaCfg');
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+      try {
+        const msg = await guardarCuentaWeb({
+          idFila: document.getElementById('cfgAccId').value,
+          institucion,
+          tipo: document.getElementById('cfgAccTipo').value,
+          nombre,
+          fecha: document.getElementById('cfgAccFecha').value,
+          moneda: document.getElementById('cfgAccMoneda').value,
+          estado: document.getElementById('cfgAccEstado').value
+        });
+        alert(msg);
+        modalCuentaBS.hide();
+        await renderCuentasCfg();
+        await refrescarCatalogosGlobales();
+      } catch (err) {
+        alert('Error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Guardar Cuenta';
+      }
+    });
+
+    // 2. Beneficiarios
+    async function renderBeneficiariosCfg() {
+      const cont = document.getElementById('tablaBenCfg');
+      document.getElementById('btnFusionarBen').classList.add('d-none');
+      cont.innerHTML = '<div class="text-center text-muted py-3">Analizando historial...</div>';
+
+      listaBenCfgCache = await obtenerDatosBeneficiariosWeb();
+      pintarTablaBeneficiarios(listaBenCfgCache);
+    }
+
+    function pintarTablaBeneficiarios(lista) {
+      const cont = document.getElementById('tablaBenCfg');
+      if (!lista || lista.length === 0) {
+        cont.innerHTML = '<div class="text-center text-muted py-3">No hay beneficiarios.</div>';
+        return;
+      }
+
+      let html = `
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light sticky-top">
+            <tr>
+              <th style="width: 36px;"></th>
+              <th>Nombre</th>
+              <th>Estado</th>
+              <th class="text-center">Usos</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+      lista.forEach(b => {
+        const badge = b.estado === 'Activo'
+          ? '<span class="badge bg-success-subtle text-success">Activo</span>'
+          : '<span class="badge bg-danger-subtle text-danger">Inactivo</span>';
+        html += `
+          <tr>
+            <td><input type="checkbox" class="form-check-input chk-ben-fusion" value="${b.nombre}"></td>
+            <td><strong>${b.nombre}</strong><br><small class="text-muted">Último uso: ${b.ultimaFecha}</small></td>
+            <td>${badge}</td>
+            <td class="text-center"><span class="badge bg-primary-subtle text-primary">${b.usos}</span></td>
+            <td class="text-end">
+              <button type="button" class="btn btn-sm btn-outline-primary btn-edit-ben" data-id="${b.idFila}">✏️</button>
+              ${b.usos === 0 ? `<button type="button" class="btn btn-sm btn-outline-danger btn-del-ben" data-id="${b.idFila}" data-nom="${b.nombre}">🗑️</button>` : ''}
+            </td>
+          </tr>`;
+      });
+
+      html += '</tbody></table>';
+      cont.innerHTML = html;
+
+      cont.querySelectorAll('.chk-ben-fusion').forEach(chk => {
+        chk.addEventListener('change', () => {
+          const cant = cont.querySelectorAll('.chk-ben-fusion:checked').length;
+          document.getElementById('btnFusionarBen').classList.toggle('d-none', cant < 2);
+        });
+      });
+
+      cont.querySelectorAll('.btn-edit-ben').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = listaBenCfgCache.find(x => String(x.idFila) === btn.dataset.id);
+          abrirModalBenCfg(item);
+        });
+      });
+
+      cont.querySelectorAll('.btn-del-ben').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm(`¿Eliminar a "${btn.dataset.nom}"?`)) return;
+          const msg = await eliminarBeneficiarioWeb(btn.dataset.id, btn.dataset.nom);
+          alert(msg);
+          await renderBeneficiariosCfg();
+          await refrescarCatalogosGlobales();
+        });
+      });
+    }
+
+    document.getElementById('txtFiltroBenCfg').addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      const filtrados = listaBenCfgCache.filter(b => b.nombre.toLowerCase().includes(q));
+      pintarTablaBeneficiarios(filtrados);
+    });
+
+    function abrirModalBenCfg(datos = null) {
+      document.getElementById('tituloModalBen').textContent = datos ? 'Editar Beneficiario' : 'Nuevo Beneficiario';
+      document.getElementById('cfgBenId').value = datos ? datos.idFila : '';
+      document.getElementById('cfgBenNombre').value = datos ? datos.nombre : '';
+      document.getElementById('cfgBenEstado').value = datos ? datos.estado : 'Activo';
+      modalBenBS.show();
+    }
+
+    document.getElementById('btnNuevoBen').addEventListener('click', () => abrirModalBenCfg(null));
+
+    document.getElementById('btnGuardarBenCfg').addEventListener('click', async () => {
+      const nombre = document.getElementById('cfgBenNombre').value.trim();
+      if (!nombre) return alert('Escribe un nombre.');
+
+      const msg = await guardarBeneficiarioWeb({
+        idFila: document.getElementById('cfgBenId').value,
+        nombre,
+        estado: document.getElementById('cfgBenEstado').value
+      });
+      alert(msg);
+      modalBenBS.hide();
+      await renderBeneficiariosCfg();
+      await refrescarCatalogosGlobales();
+    });
+
+    document.getElementById('btnFusionarBen').addEventListener('click', async () => {
+      const seleccionados = Array.from(document.querySelectorAll('.chk-ben-fusion:checked')).map(cb => cb.value);
+      if (seleccionados.length < 2) return;
+      const nombreFinal = prompt(`Vas a fusionar: ${seleccionados.join(', ')}\n\nEscribe el nombre ÚNICO que debe quedar:`, seleccionados[0]);
+      if (!nombreFinal) return;
+      if (!confirm(`¿Confirmas unificar todos sus movimientos bajo "${nombreFinal.trim()}"?`)) return;
+
+      const msg = await fusionarBeneficiariosWeb(seleccionados, nombreFinal);
+      alert(msg);
+      await renderBeneficiariosCfg();
+      await refrescarCatalogosGlobales();
+    });
+
+    // 3. Categorías y Subcategorías
+    async function renderCategoriasCfg() {
+      const cont = document.getElementById('tablaCatCfg');
+      cont.innerHTML = '<div class="text-center text-muted py-3">Cargando categorías...</div>';
+      const lista = await obtenerCategoriasPrincipalesWeb();
+
+      let html = `
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Categoría</th>
+              <th class="text-center">Tipo</th>
+              <th class="text-end">Subcategorías</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+      lista.forEach(c => {
+        const esIngreso = c.tipo === 'Ingreso';
+        const badge = esIngreso
+          ? '<span class="badge bg-success-subtle text-success">INGRESO</span>'
+          : '<span class="badge bg-danger-subtle text-danger">GASTO</span>';
+        html += `
+          <tr>
+            <td><strong>${c.nombre}</strong></td>
+            <td class="text-center">${badge}</td>
+            <td class="text-end">
+              <button type="button" class="btn btn-sm btn-primary btn-ver-subcats" data-cat="${c.nombre}" data-tipo="${c.tipo}">
+                Subcategorías 📂
+              </button>
+            </td>
+          </tr>`;
+      });
+
+      html += '</tbody></table>';
+      cont.innerHTML = html;
+
+      cont.querySelectorAll('.btn-ver-subcats').forEach(btn => {
+        btn.addEventListener('click', () => abrirDetalleCategoriaCfg(btn.dataset.cat, btn.dataset.tipo));
+      });
+    }
+
+    async function abrirDetalleCategoriaCfg(nombre, tipo) {
+      catActualCfg = nombre;
+      tipoCatActualCfg = tipo;
+      document.getElementById('tituloModalCat').textContent = `📂 ${nombre}`;
+      const cont = document.getElementById('listaSubcatsCfg');
+      cont.innerHTML = '<div class="p-3 text-muted">Cargando subcategorías...</div>';
+      modalCatDetalleBS.show();
+
+      const subs = await obtenerSubcategoriasPorCatWeb(nombre);
+      if (subs.length === 0) {
+        cont.innerHTML = '<div class="p-3 text-muted fst-italic">No hay subcategorías registradas.</div>';
+        return;
+      }
+
+      let html = '<table class="table table-sm align-middle mb-0"><tbody>';
+      subs.forEach(s => {
+        html += `
+          <tr>
+            <td class="px-3 py-2">${s.sub || '---'}</td>
+            <td class="text-end px-3">
+              <button type="button" class="btn btn-sm btn-outline-secondary btn-edit-sub" data-id="${s.idFila}" data-sub="${s.sub}">✏️</button>
+            </td>
+          </tr>`;
+      });
+      html += '</tbody></table>';
+      cont.innerHTML = html;
+
+      cont.querySelectorAll('.btn-edit-sub').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const actual = btn.dataset.sub;
+          const nuevo = prompt(`Editar subcategoría "${actual}":`, actual);
+          if (!nuevo || nuevo.trim() === actual) return;
+          const msg = await actualizarSubcategoriaMasivoWeb(btn.dataset.id, catActualCfg, actual, nuevo, tipoCatActualCfg);
+          alert(msg);
+          await abrirDetalleCategoriaCfg(catActualCfg, tipoCatActualCfg);
+          await refrescarCatalogosGlobales();
+        });
+      });
+    }
+
+    document.getElementById('btnAddSubcatCfg').addEventListener('click', async () => {
+      const inp = document.getElementById('txtNuevaSubcatCfg');
+      const nombreSub = inp.value.trim();
+      if (!nombreSub) return;
+      await guardarCategoriaWeb({ tipo: tipoCatActualCfg, categoria: catActualCfg, subcategoria: nombreSub });
+      inp.value = '';
+      await abrirDetalleCategoriaCfg(catActualCfg, tipoCatActualCfg);
+      await refrescarCatalogosGlobales();
+    });
+
+    document.getElementById('btnRenombrarCat').addEventListener('click', async () => {
+      if (!catActualCfg) return;
+      const nuevo = prompt(`Nuevo nombre para la categoría "${catActualCfg}":`, catActualCfg);
+      if (!nuevo || nuevo.trim() === catActualCfg) return;
+      if (!confirm('Se actualizará el historial de transacciones. ¿Continuar?')) return;
+
+      const msg = await renombrarCategoriaPrincipalWeb(catActualCfg, nuevo);
+      alert(msg);
+      catActualCfg = nuevo.trim();
+      document.getElementById('tituloModalCat').textContent = `📂 ${catActualCfg}`;
+      await renderCategoriasCfg();
+      await refrescarCatalogosGlobales();
+    });
+
+    document.getElementById('btnNuevaCat').addEventListener('click', async () => {
+      const nombre = prompt('Nombre de la nueva Categoría principal:');
+      if (!nombre || !nombre.trim()) return;
+      const tipo = confirm('¿Es una categoría de INGRESO?\n(Aceptar = Ingreso / Cancelar = Gasto)') ? 'Ingreso' : 'Gasto';
+      const sub = prompt(`Primera subcategoría para "${nombre.trim()}":`, 'General');
+      if (!sub || !sub.trim()) return;
+
+      const msg = await guardarCategoriaWeb({ tipo, categoria: nombre.trim(), subcategoria: sub.trim() });
+      alert(msg);
+      await renderCategoriasCfg();
+      await refrescarCatalogosGlobales();
+    });
+    
   </script>
 </body>
 </html>

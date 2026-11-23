@@ -1938,6 +1938,59 @@
           await refrescarPlantillas();
         });
 
+      function limpiarFormularioRegistro() {
+  // 1. Limpiar campos de Transacción simple
+  const formTx = document.getElementById('formTransaccion');
+  if (formTx) formTx.reset();
+
+  // Restaurar fecha de hoy y tipo por defecto (Gasto)
+  const inpFechaTx = document.getElementById('txFecha');
+  if (inpFechaTx) inpFechaTx.value = hoyISO;
+
+  const radioGasto = document.getElementById('tipoGasto');
+  if (radioGasto) {
+    radioGasto.checked = true;
+    radioGasto.dispatchEvent(new Event('change')); // Recarga categorías de Gasto y limpia subcategoría
+  }
+
+  // Ocultar bloque de conversión de divisa si estaba visible
+  const boxDivisaTx = document.getElementById('boxConversionTx');
+  if (boxDivisaTx) boxDivisaTx.classList.add('d-none');
+
+  // 2. Limpiar campos de Transferencia
+  const formTr = document.getElementById('formTransferencia');
+  if (formTr) formTr.reset();
+
+  const inpFechaTr = document.getElementById('trFecha');
+  if (inpFechaTr) inpFechaTr.value = hoyISO;
+
+  const boxDivisaTr = document.getElementById('boxConversionTr');
+  if (boxDivisaTr) boxDivisaTr.classList.add('d-none');
+
+  // 3. Limpiar campos de Desglose
+  const formDes = document.getElementById('formDesglose');
+  if (formDes) formDes.reset();
+
+  const inpFechaDes = document.getElementById('desFecha');
+  if (inpFechaDes) inpFechaDes.value = hoyISO;
+
+  const boxDivisaDes = document.getElementById('boxConversionDes');
+  if (boxDivisaDes) boxDivisaDes.classList.add('d-none');
+
+  // Reiniciar tabla dinámica de ítems del desglose (dejar 1 fila vacía)
+  const tbodyDesglose = document.getElementById('tbodyDesglose');
+  if (tbodyDesglose) {
+    tbodyDesglose.innerHTML = '';
+    if (typeof agregarFilaDesglose === 'function') {
+      agregarFilaDesglose();
+    }
+  }
+
+  // Reiniciar indicador de cuadre del desglose
+  const lblDiferencia = document.getElementById('desDiferencia');
+  if (lblDiferencia) lblDiferencia.textContent = '$ 0';
+}
+
       // --- VISTA 3: HISTORIAL Y CONCILIACIÓN ---
       const chkModoConc = document.getElementById("chkModoConciliacion");
       const panelConc = document.getElementById("panelConciliacion");

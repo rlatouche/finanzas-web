@@ -1938,57 +1938,49 @@
           await refrescarPlantillas();
         });
 
-      function limpiarFormularioRegistro() {
-  // 1. Limpiar campos de Transacción simple
-  const formTx = document.getElementById('formTransaccion');
-  if (formTx) formTx.reset();
+ function limpiarFormSimple() {
+  document.getElementById('formSimple').reset();
+  document.getElementById('txFecha').value = hoyISO;
+  document.getElementById('txTipo').value = 'Gasto';
 
-  // Restaurar fecha de hoy y tipo por defecto (Gasto)
-  const inpFechaTx = document.getElementById('txFecha');
-  if (inpFechaTx) inpFechaTx.value = hoyISO;
+  // Ocultar cajas condicionales de nuevo beneficiario, categoría, subcategoría y sugerencias
+  document.getElementById('boxSugerencias').classList.add('d-none');
+  document.getElementById('boxNuevoBen').classList.add('d-none');
+  document.getElementById('boxNuevaCat').classList.add('d-none');
+  document.getElementById('boxNuevaSub').classList.add('d-none');
 
-  const radioGasto = document.getElementById('tipoGasto');
-  if (radioGasto) {
-    radioGasto.checked = true;
-    radioGasto.dispatchEvent(new Event('change')); // Recarga categorías de Gasto y limpia subcategoría
-  }
+  // Disparar eventos para restaurar la moneda de la cuenta por defecto y las categorías de Gasto
+  document.getElementById('txCuenta').dispatchEvent(new Event('change'));
+  document.getElementById('txTipo').dispatchEvent(new Event('change'));
+}
 
-  // Ocultar bloque de conversión de divisa si estaba visible
-  const boxDivisaTx = document.getElementById('boxConversionTx');
-  if (boxDivisaTx) boxDivisaTx.classList.add('d-none');
+function limpiarFormTransferencia() {
+  document.getElementById('formTransferencia').reset();
+  document.getElementById('trFecha').value = hoyISO;
+  document.getElementById('boxMontoDestino').classList.add('d-none');
 
-  // 2. Limpiar campos de Transferencia
-  const formTr = document.getElementById('formTransferencia');
-  if (formTr) formTr.reset();
+  // Disparar change para recalcular etiquetas de moneda origen/destino
+  document.getElementById('trOrigen').dispatchEvent(new Event('change'));
+}
 
-  const inpFechaTr = document.getElementById('trFecha');
-  if (inpFechaTr) inpFechaTr.value = hoyISO;
+function limpiarFormCompuesto() {
+  document.getElementById('cmpFecha').value = hoyISO;
+  document.getElementById('cmpTipo').value = 'GASTO';
+  document.getElementById('cmpBen').selectedIndex = 0;
+  document.getElementById('cmpCuenta').selectedIndex = 0;
+  document.getElementById('cmpMontoRef').value = '';
+  document.getElementById('selPlantillas').value = '';
+  document.getElementById('txtNombrePlantilla').value = '';
 
-  const boxDivisaTr = document.getElementById('boxConversionTr');
-  if (boxDivisaTr) boxDivisaTr.classList.add('d-none');
+  // Disparar change para actualizar el campo de solo lectura cmpMoneda
+  document.getElementById('cmpCuenta').dispatchEvent(new Event('change'));
 
-  // 3. Limpiar campos de Desglose
-  const formDes = document.getElementById('formDesglose');
-  if (formDes) formDes.reset();
-
-  const inpFechaDes = document.getElementById('desFecha');
-  if (inpFechaDes) inpFechaDes.value = hoyISO;
-
-  const boxDivisaDes = document.getElementById('boxConversionDes');
-  if (boxDivisaDes) boxDivisaDes.classList.add('d-none');
-
-  // Reiniciar tabla dinámica de ítems del desglose (dejar 1 fila vacía)
-  const tbodyDesglose = document.getElementById('tbodyDesglose');
-  if (tbodyDesglose) {
-    tbodyDesglose.innerHTML = '';
-    if (typeof agregarFilaDesglose === 'function') {
-      agregarFilaDesglose();
-    }
-  }
-
-  // Reiniciar indicador de cuadre del desglose
-  const lblDiferencia = document.getElementById('desDiferencia');
-  if (lblDiferencia) lblDiferencia.textContent = '$ 0';
+  // Vaciar las partidas dinámicas y reiniciar el indicador de cuadre
+  document.getElementById('contenedorPartidas').innerHTML = '';
+  const boxCuadre = document.getElementById('boxCuadre');
+  boxCuadre.className = 'alert alert-danger text-end fw-bold py-2 mb-3';
+  boxCuadre.textContent = 'Diferencia: $0.00';
+  document.getElementById('btnGuardarCompuesto').disabled = true;
 }
 
       // --- VISTA 3: HISTORIAL Y CONCILIACIÓN ---

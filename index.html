@@ -8,6 +8,7 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
       body {
         background-color: #f4f7fa;
@@ -102,9 +103,7 @@
             <li class="nav-item">
               <a class="nav-link" href="#" data-vista="historial">Historial</a>
             </li>
-            <li class="nav-item">
-              <a class="nav-link disabled" href="#">Gastos</a>
-            </li>
+     <li class="nav-item"><a class="nav-link" href="#" data-vista="gastos">Gastos</a></li>
             <li class="nav-item">
               <a class="nav-link" href="#" data-vista="configuracion"
                 >Configuración</a
@@ -1005,6 +1004,81 @@
           </div>
         </div>
       </div>
+      <!-- =================================================================== -->
+    <!-- VISTA 5: ANÁLISIS DE GASTOS                                         -->
+    <!-- =================================================================== -->
+    <section id="vista-gastos" class="d-none">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold text-dark mb-0">Análisis de Gastos</h5>
+      </div>
+
+      <!-- Filtros -->
+      <div class="card p-3 mb-3 shadow-sm border-0">
+        <div class="row g-2">
+          <div class="col-6 col-md-3">
+            <label class="form-label small fw-bold text-muted">Desde</label>
+            <input type="date" id="gastosDesde" class="form-control form-control-sm">
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small fw-bold text-muted">Hasta</label>
+            <input type="date" id="gastosHasta" class="form-control form-control-sm">
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small fw-bold text-muted">Ver por</label>
+            <select id="gastosModoVista" class="form-select form-select-sm">
+              <option value="BENEFICIARIO">Beneficiario</option>
+              <option value="CATEGORIA" selected>Categoría</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-3" id="boxFiltroCatGastos">
+            <label class="form-label small fw-bold text-muted">Filtrar Categoría</label>
+            <select id="gastosFiltroCat" class="form-select form-select-sm">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div class="col-12 mt-2">
+            <button type="button" id="btnActualizarGastos" class="btn btn-danger btn-sm w-100 fw-bold">
+              Actualizar Datos
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjeta Total Gastado -->
+      <div class="card p-3 mb-3 shadow-sm border-0 text-center">
+        <div class="small text-uppercase text-muted fw-bold">Total Gastado en el Periodo</div>
+        <h2 id="gastosTotalValor" class="fw-bold text-danger mb-0 mt-1">$ 0</h2>
+      </div>
+
+      <!-- Gráfico Chart.js + Tabla Detallada -->
+      <div class="row g-3">
+        <div class="col-lg-5">
+          <div class="card p-3 shadow-sm border-0 h-100">
+            <div style="position: relative; height: 290px;">
+              <canvas id="graficoGastosCanvas"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-7">
+          <div class="card p-3 shadow-sm border-0 h-100">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th id="thNombreGastos">Categoría</th>
+                    <th class="text-end">Monto</th>
+                    <th class="text-end" style="width: 75px;">%</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyGastos">
+                  <tr><td colspan="3" class="text-center text-muted py-3">Cargando datos...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1041,6 +1115,7 @@
         renombrarCategoriaPrincipalWeb,
         actualizarSubcategoriaMasivoWeb,
       } from "./js/configuracion.js";
+      import { obtenerDatosGastosWeb } from './js/gastos.js';
       const session = await verificarSesion();
       if (!session) throw new Error("Sin sesión");
 
@@ -1067,31 +1142,21 @@
       let saldoFinalSistemaNum = 0;
 
       // --- NAVEGACIÓN ENTRE VISTAS ---
-      async function activarVista(vista) {
-        document
-          .querySelectorAll("[data-vista]")
-          .forEach((l) =>
-            l.classList.toggle("active", l.dataset.vista === vista),
-          );
-        document
-          .getElementById("vista-saldos")
-          .classList.toggle("d-none", vista !== "saldos");
-        document
-          .getElementById("vista-registrar")
-          .classList.toggle("d-none", vista !== "registrar");
-        document
-          .getElementById("vista-historial")
-          .classList.toggle("d-none", vista !== "historial");
-        document
-          .getElementById("vista-configuracion")
-          .classList.toggle("d-none", vista !== "configuracion");
+     async function activarVista(vista) {
+      document.querySelectorAll('[data-vista]').forEach(l => l.classList.toggle('active', l.dataset.vista === vista));
+      document.getElementById('vista-saldos').classList.toggle('d-none', vista !== 'saldos');
+      document.getElementById('vista-registrar').classList.toggle('d-none', vista !== 'registrar');
+      document.getElementById('vista-historial').classList.toggle('d-none', vista !== 'historial');
+      document.getElementById('vista-gastos').classList.toggle('d-none', vista !== 'gastos');
+      document.getElementById('vista-configuracion').classList.toggle('d-none', vista !== 'configuracion');
 
-        if (!catalogos && (vista === "registrar" || vista === "historial")) {
-          await inicializarCatalogosYFormularios();
-        }
-        if (vista === "saldos") cargarSaldos();
-        if (vista === "configuracion") await inicializarConfiguracion();
+      if (!catalogos && (vista === 'registrar' || vista === 'historial')) {
+        await inicializarCatalogosYFormularios();
       }
+      if (vista === 'saldos') cargarSaldos();
+      if (vista === 'gastos') await inicializarGastos();
+      if (vista === 'configuracion') await inicializarConfiguracion();
+    }
 
       document.querySelectorAll("[data-vista]").forEach((link) => {
         link.addEventListener("click", (e) => {
@@ -2653,6 +2718,138 @@
           await renderCategoriasCfg();
           await refrescarCatalogosGlobales();
         });
+   // --- VISTA 5: ANÁLISIS DE GASTOS ---
+    let chartGastosInstance = null;
+    let datosGastosBrutos = [];
+    let gastosInicializado = false;
+
+    async function inicializarGastos() {
+      if (!gastosInicializado) {
+        document.getElementById('gastosDesde').value = primerDiaMesISO;
+        document.getElementById('gastosHasta').value = hoyISO;
+        gastosInicializado = true;
+      }
+      await cargarDatosGastos();
+    }
+
+    async function cargarDatosGastos() {
+      const desde = document.getElementById('gastosDesde').value;
+      const hasta = document.getElementById('gastosHasta').value;
+      const tbody = document.getElementById('tbodyGastos');
+      tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">Consultando gastos...</td></tr>';
+
+      try {
+        const res = await obtenerDatosGastosWeb(desde, hasta);
+        datosGastosBrutos = res.gastos;
+
+        const selCat = document.getElementById('gastosFiltroCat');
+        const valorPrevio = selCat.value;
+        selCat.innerHTML = '<option value="">Todas</option>';
+        res.categorias.forEach(c => selCat.add(new Option(c, c)));
+        if (res.categorias.includes(valorPrevio)) selCat.value = valorPrevio;
+
+        renderizarGastos();
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-danger">Error: ${err.message}</td></tr>`;
+      }
+    }
+
+    function gestionarFiltrosGastos() {
+      const modo = document.getElementById('gastosModoVista').value;
+      const boxCat = document.getElementById('boxFiltroCatGastos');
+      const selCat = document.getElementById('gastosFiltroCat');
+
+      if (modo === 'CATEGORIA') {
+        boxCat.style.opacity = '1';
+        boxCat.style.pointerEvents = 'auto';
+      } else {
+        boxCat.style.opacity = '0.4';
+        boxCat.style.pointerEvents = 'none';
+        selCat.value = '';
+      }
+      renderizarGastos();
+    }
+
+    function renderizarGastos() {
+      const modo = document.getElementById('gastosModoVista').value;
+      const fCat = document.getElementById('gastosFiltroCat').value;
+      const thNombre = document.getElementById('thNombreGastos');
+
+      const agrupados = {};
+      let total = 0;
+
+      datosGastosBrutos.forEach(g => {
+        let clave;
+        if (modo === 'CATEGORIA') {
+          if (fCat !== '' && g.categoria !== fCat) return;
+          clave = (fCat !== '') ? g.subcategoria : g.categoria;
+          thNombre.textContent = (fCat !== '') ? 'Subcategoría' : 'Categoría';
+        } else {
+          clave = g.beneficiario;
+          thNombre.textContent = 'Beneficiario';
+        }
+
+        const monto = Math.abs(g.monto);
+        agrupados[clave] = (agrupados[clave] || 0) + monto;
+        total += monto;
+      });
+
+      document.getElementById('gastosTotalValor').textContent = fmtCOP.format(total);
+
+      const ordenados = Object.keys(agrupados).sort((a, b) => agrupados[b] - agrupados[a]);
+      const tbody = document.getElementById('tbodyGastos');
+
+      if (ordenados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">Sin gastos en este rango.</td></tr>';
+      } else {
+        tbody.innerHTML = ordenados.map(clave => {
+          const val = agrupados[clave];
+          const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
+          return `
+            <tr>
+              <td class="fw-semibold">${clave}</td>
+              <td class="text-end text-danger fw-bold">${fmtCOP.format(val)}</td>
+              <td class="text-end text-muted small">${pct}%</td>
+            </tr>`;
+        }).join('');
+      }
+
+      actualizarGraficoGastos(ordenados, ordenados.map(k => agrupados[k]));
+    }
+
+    function actualizarGraficoGastos(etiquetas, valores) {
+      const ctx = document.getElementById('graficoGastosCanvas').getContext('2d');
+      if (chartGastosInstance) chartGastosInstance.destroy();
+
+      chartGastosInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: etiquetas,
+          datasets: [{
+            data: valores,
+            backgroundColor: [
+              '#ea4335', '#1a73e8', '#fbbc04', '#34a853',
+              '#ff6d01', '#46bdc6', '#7b1fa2', '#e91e63',
+              '#009688', '#795548', '#607d8b', '#3f51b5'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { boxWidth: 12, font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    document.getElementById('gastosModoVista').addEventListener('change', gestionarFiltrosGastos);
+    document.getElementById('gastosFiltroCat').addEventListener('change', renderizarGastos);
+    document.getElementById('btnActualizarGastos').addEventListener('click', cargarDatosGastos);     
     </script>
   </body>
 </html>

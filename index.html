@@ -1442,7 +1442,7 @@ async function cargarSaldos() {
 
   try {
     // Ajusta el nombre de la función importada de js/cuentas.js si en tu archivo se llama distinto
-    const respuesta = await obtenerSaldosWeb(inpFecha.value);
+    const respuesta = await obtenerResumenSaldosWeb(inpFecha.value);
 
     // Soporta tanto si devuelve { cuentas, tasas } como si devuelve directamente un array
     cacheSaldosActual = Array.isArray(respuesta) ? respuesta : (respuesta.cuentas || []);

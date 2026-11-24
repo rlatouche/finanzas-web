@@ -101,7 +101,7 @@
     <!-- Barra de Navegación -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
       <div class="container">
-        <a class="navbar-brand" href="#" data-vista="saldos"
+        <a class="navbar-brand" href="#" data-vista="inicio"
           >Finanzas Personales</a
         >
         <button
@@ -146,10 +146,50 @@
     </nav>
 
     <main class="container pb-5">
+
+      <!-- =================================================================== -->
+<!-- VISTA 0: BIENVENIDA / INICIO                                        -->
+<!-- =================================================================== -->
+<section id="vista-inicio">
+  <div class="card shadow-sm border-0 p-4 p-md-5 text-center bg-white">
+    <div class="mb-3">
+      <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-semibold" id="bienvenidaFecha">
+        Hoy
+      </span>
+    </div>
+    <h2 class="fw-bold text-dark mb-2">Bienvenido a Finanzas Personales</h2>
+    <p class="text-muted mx-auto mb-4" style="max-width: 520px;">
+      Sistema de control financiero personal y gestión multimoneda. Selecciona una opción en la barra superior para consultar saldos, registrar movimientos o generar reportes.
+    </p>
+
+    <!-- Referencia rápida de Tasas de Cambio del día -->
+    <div class="row g-2 justify-content-center mx-auto" style="max-width: 620px;">
+      <div class="col-4">
+        <div class="p-3 rounded bg-light border">
+          <div class="small fw-bold text-muted">USD → COP</div>
+          <div class="fw-bold text-primary fs-6" id="tasaInicioUSD">—</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="p-3 rounded bg-light border">
+          <div class="small fw-bold text-muted">EUR → COP</div>
+          <div class="fw-bold text-primary fs-6" id="tasaInicioEUR">—</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="p-3 rounded bg-light border">
+          <div class="small fw-bold text-muted">VEF → COP</div>
+          <div class="fw-bold text-primary fs-6" id="tasaInicioVEF">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="text-muted mt-2" style="font-size: 0.75rem;" id="tasaInicioFecha"></div>
+  </div>
+</section>
 <!-- =================================================================== -->
 <!-- VISTA 1: SALDOS POR CUENTA                                          -->
 <!-- =================================================================== -->
-<section id="vista-saldos">
+<section id="vista-saldos" class='d-none'>
   <!-- Panel de Filtros (Fecha Corte, Moneda, Institución y Tipo) -->
   <div class="card p-3 mb-3 shadow-sm border-0">
     <div class="row g-2">
@@ -1269,7 +1309,7 @@
       if (!session) throw new Error("Sin sesión");
 
       document.getElementById("usuarioEmail").textContent = session.user.email;
-      activarVista('saldos');
+      activarVista('inicio');
       document
         .getElementById("btnSalir")
         .addEventListener("click", cerrarSesion);
@@ -1305,8 +1345,9 @@ if (inpFechaCorte && !inpFechaCorte.value) {
       let saldoFinalSistemaNum = 0;
 
       // --- NAVEGACIÓN ENTRE VISTAS ---
-      async function activarVista(vista) {
+async function activarVista(vista) {
   document.querySelectorAll('[data-vista]').forEach(l => l.classList.toggle('active', l.dataset.vista === vista));
+  document.getElementById('vista-inicio').classList.toggle('d-none', vista !== 'inicio');
   document.getElementById('vista-saldos').classList.toggle('d-none', vista !== 'saldos');
   document.getElementById('vista-registrar').classList.toggle('d-none', vista !== 'registrar');
   document.getElementById('vista-historial').classList.toggle('d-none', vista !== 'historial');
@@ -1317,12 +1358,44 @@ if (inpFechaCorte && !inpFechaCorte.value) {
   if (!catalogos && (vista === 'registrar' || vista === 'historial' || vista === 'extracto')) {
     await inicializarCatalogosYFormularios();
   }
+  if (vista === 'inicio') await cargarBienvenida();
   if (vista === 'saldos') cargarSaldos();
   if (vista === 'gastos') await inicializarGastos();
   if (vista === 'configuracion') await inicializarConfiguracion();
   if (vista === 'extracto') inicializarExtracto();
 }
+async function cargarBienvenida() {
+  const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const textoFecha = new Date().toLocaleDateString('es-CO', opcionesFecha);
+  document.getElementById('bienvenidaFecha').textContent =
+    textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1);
 
+  try {
+    const { data, error } = await supabase
+      .from('tasas_cambio')
+      .select('fecha, usd, eur, vef')
+      .order('fecha', { ascending: false })
+      .limit(1);
+
+    if (!error && data && data.length > 0) {
+      const t = data[0];
+      const fmtCOP = (v, dec = 2) =>
+        new Intl.NumberFormat('es-CO', {
+          style: 'currency',
+          currency: 'COP',
+          minimumFractionDigits: dec,
+          maximumFractionDigits: dec
+        }).format(parseFloat(v) || 0);
+
+      document.getElementById('tasaInicioUSD').textContent = fmtCOP(t.usd, 2);
+      document.getElementById('tasaInicioEUR').textContent = fmtCOP(t.eur, 2);
+      document.getElementById('tasaInicioVEF').textContent = fmtCOP(t.vef, 4);
+      document.getElementById('tasaInicioFecha').textContent = `Tasas vigentes al ${t.fecha}`;
+    }
+  } catch (e) {
+    console.warn('No se pudieron cargar las tasas en bienvenida:', e.message);
+  }
+}
       document.querySelectorAll("[data-vista]").forEach((link) => {
         link.addEventListener("click", (e) => {
           e.preventDefault();

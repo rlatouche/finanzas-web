@@ -1494,8 +1494,11 @@
               memo: document.getElementById("txMemo").value.trim(),
             });
 
-            document.getElementById("txMonto").value = "";
-            document.getElementById("txMemo").value = "";
+            if (ben === "NUEVO" || cat === "NUEVA_CAT" || sub === "NUEVA_SUB") {
+              await inicializarCatalogosYFormularios();
+            }
+
+            limpiarFormSimple();
             salirModoEdicion();
 
             if (estabaEditando) {
@@ -1576,9 +1579,7 @@
               nota: document.getElementById("trNota").value.trim(),
             });
 
-            document.getElementById("trMontoOrigen").value = "";
-            document.getElementById("trMontoDestino").value = "";
-            document.getElementById("trNota").value = "";
+           limpiarFormTransferencia();
             salirModoEdicion();
 
             if (estabaEditando) {
@@ -1840,10 +1841,7 @@
               cabecera,
               partidas,
             });
-            document.getElementById("contenedorPartidas").innerHTML = "";
-            document.getElementById("cmpMontoRef").value = "";
-            agregarPartidaCompuesta();
-            validarCuadreCompuesto();
+            limpiarFormCompuesto();
             salirModoEdicion();
 
             if (estabaEditando) {
@@ -1964,23 +1962,21 @@ function limpiarFormTransferencia() {
 }
 
 function limpiarFormCompuesto() {
-  document.getElementById('cmpFecha').value = hoyISO;
-  document.getElementById('cmpTipo').value = 'GASTO';
-  document.getElementById('cmpBen').selectedIndex = 0;
-  document.getElementById('cmpCuenta').selectedIndex = 0;
-  document.getElementById('cmpMontoRef').value = '';
-  document.getElementById('selPlantillas').value = '';
-  document.getElementById('txtNombrePlantilla').value = '';
+  document.getElementById("cmpFecha").value = hoyISO;
+  document.getElementById("cmpTipo").value = "GASTO";
+  document.getElementById("cmpBen").selectedIndex = 0;
+  document.getElementById("cmpCuenta").selectedIndex = 0;
+  document.getElementById("cmpMontoRef").value = "";
+  document.getElementById("selPlantillas").value = "";
+  document.getElementById("txtNombrePlantilla").value = "";
 
-  // Disparar change para actualizar el campo de solo lectura cmpMoneda
-  document.getElementById('cmpCuenta').dispatchEvent(new Event('change'));
+  // Actualizar cmpMoneda según la cuenta por defecto
+  document.getElementById("cmpCuenta").dispatchEvent(new Event("change"));
 
-  // Vaciar las partidas dinámicas y reiniciar el indicador de cuadre
-  document.getElementById('contenedorPartidas').innerHTML = '';
-  const boxCuadre = document.getElementById('boxCuadre');
-  boxCuadre.className = 'alert alert-danger text-end fw-bold py-2 mb-3';
-  boxCuadre.textContent = 'Diferencia: $0.00';
-  document.getElementById('btnGuardarCompuesto').disabled = true;
+  // Reiniciar partidas dejando una tarjeta vacía lista para llenar
+  document.getElementById("contenedorPartidas").innerHTML = "";
+  agregarPartidaCompuesta();
+  validarCuadreCompuesto();
 }
 
       // --- VISTA 3: HISTORIAL Y CONCILIACIÓN ---

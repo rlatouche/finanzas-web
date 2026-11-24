@@ -1273,7 +1273,7 @@
         .getElementById("btnSalir")
         .addEventListener("click", cerrarSesion);
 
-      // const hoy = new Date();
+      // const hoy = new Date().toLocaleDateString('en-CA');
       // const hoyISO = new Date(Date.now() - hoy.getTimezoneOffset() * 60000)
       //   .toISOString()
       //   .split("T")[0];
@@ -1384,7 +1384,7 @@ function renderizarSaldosFiltrados() {
   const filtradas = cacheSaldosActual.filter(c => {
     const mon = (c.moneda || c.moneda_codigo || 'COP').toUpperCase();
     const inst = (c.institucion || 'Sin Institución').trim();
-    const tipo = (c.tipo_cuenta || c.tipo || 'Sin Tipo').trim();
+    const tipo = (c.tipo || c.tipo_cuenta || 'Sin Tipo').trim();
 
     if (fMoneda && mon !== fMoneda) return false;
     if (fInst && inst !== fInst) return false;
@@ -1408,8 +1408,8 @@ function renderizarSaldosFiltrados() {
   contenedor.innerHTML = filtradas.map(c => {
     const mon = (c.moneda || c.moneda_codigo || 'COP').toUpperCase();
     const inst = c.institucion || 'Sin Institución';
-    const tipo = c.tipo_cuenta || c.tipo || '';
-    const saldoOrig = parseFloat(c.saldo) || 0;
+    const tipo = c.tipo || c.tipo_cuenta || '';
+    const saldoOrig = parseFloat(c.saldoOriginal ?? c.saldo) || 0;
     const saldoCop = parseFloat(c.saldoCOP) || 0;
     const claseColor = saldoOrig < 0 ? 'text-danger' : 'text-success';
 

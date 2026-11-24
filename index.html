@@ -73,6 +73,28 @@
         border: 2px solid #1a73e8;
         border-radius: 12px;
       }
+      @media print {
+  .navbar, .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+    font-size: 11px !important;
+  }
+  .container, .container-fluid {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #dee2e6 !important;
+  }
+  tr {
+    break-inside: avoid;
+  }
+}
     </style>
   </head>
   <body>
@@ -111,6 +133,7 @@
                 >Configuración</a
               >
             </li>
+            <li class="nav-item"><a class="nav-link" href="#" data-vista="extracto">Extracto</a></li>
           </ul>
           <div class="d-flex align-items-center gap-3">
             <span id="usuarioEmail" class="text-white-50 small"></span>
@@ -1103,6 +1126,102 @@
           </div>
         </div>
       </section>
+     <!-- =================================================================== -->
+    <!-- VISTA 6: EXTRACTO DE CUENTA (IMPRIMIBLE)                            -->
+    <!-- =================================================================== -->
+    <section id="vista-extracto" class="d-none">
+      <!-- Barra de filtros (se oculta automáticamente al imprimir) -->
+      <div class="card p-3 mb-3 shadow-sm border-0 no-print">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="fw-bold text-dark mb-0">Extracto de Cuenta</h5>
+          <button type="button" id="btnImprimirExtracto" class="btn btn-outline-secondary btn-sm fw-bold" disabled>
+            🖨️ Imprimir / PDF
+          </button>
+        </div>
+
+        <form id="formFiltroExtracto" class="row g-2 align-items-end">
+          <div class="col-md-5">
+            <label class="form-label small fw-bold text-muted">Cuenta *</label>
+            <select id="extCuenta" class="form-select form-select-sm" required>
+              <option value="">-- Selecciona una cuenta --</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small fw-bold text-muted">Fecha Inicio *</label>
+            <input type="date" id="extDesde" class="form-control form-control-sm" required>
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label small fw-bold text-muted">Fecha Final *</label>
+            <input type="date" id="extHasta" class="form-control form-control-sm" required>
+          </div>
+          <div class="col-12 col-md-2">
+            <button type="submit" id="btnGenerarExtracto" class="btn btn-primary btn-sm w-100 fw-bold">
+              Generar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Área del Documento Imprimible -->
+      <div id="contenedorDocumentoExtracto" class="card p-4 shadow-sm border-0 d-none">
+        <!-- Encabezado del Extracto -->
+        <div class="border-bottom pb-3 mb-3 d-flex justify-content-between align-items-start">
+          <div>
+            <h4 class="fw-bold text-primary mb-1" id="extDocTituloCuenta">Estado de Cuenta</h4>
+            <div class="text-muted small" id="extDocSubtitulo">Institución • Tipo • Moneda</div>
+          </div>
+          <div class="text-end">
+            <div class="fw-bold small text-uppercase text-muted">Periodo Consultado</div>
+            <div class="fw-semibold" id="extDocPeriodo">YYYY-MM-DD al YYYY-MM-DD</div>
+            <div class="text-muted" style="font-size: 0.75rem;" id="extDocFechaEmision"></div>
+          </div>
+        </div>
+
+        <!-- Resumen de Totales -->
+        <div class="row g-2 mb-3 text-center">
+          <div class="col-6 col-md-3">
+            <div class="p-2 rounded bg-light border">
+              <div class="small text-muted fw-bold">SALDO INICIAL</div>
+              <div class="fw-bold text-dark" id="extResInicial">$ 0</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="p-2 rounded bg-light border">
+              <div class="small text-muted fw-bold">TOTAL INGRESOS</div>
+              <div class="fw-bold text-success" id="extResIngresos">$ 0</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="p-2 rounded bg-light border">
+              <div class="small text-muted fw-bold">TOTAL EGRESOS</div>
+              <div class="fw-bold text-danger" id="extResEgresos">$ 0</div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="p-2 rounded bg-primary-subtle border border-primary">
+              <div class="small text-primary fw-bold">SALDO FINAL</div>
+              <div class="fw-bold text-primary" id="extResFinal">$ 0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla Cronológica con Saldo Acumulado -->
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 95px;">Fecha</th>
+                <th>Beneficiario / Concepto</th>
+                <th>Categoría</th>
+                <th class="text-end" style="width: 130px;">Movimiento</th>
+                <th class="text-end" style="width: 140px;">Saldo Acumulado</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyExtracto"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -1140,6 +1259,7 @@
         actualizarSubcategoriaMasivoWeb,
       } from "./js/configuracion.js";
       import { obtenerDatosGastosWeb } from "./js/gastos.js";
+      import { obtenerExtractoCuentaWeb } from './js/extracto.js';
       const session = await verificarSesion();
       if (!session) throw new Error("Sin sesión");
 
@@ -1167,34 +1287,22 @@
 
       // --- NAVEGACIÓN ENTRE VISTAS ---
       async function activarVista(vista) {
-        document
-          .querySelectorAll("[data-vista]")
-          .forEach((l) =>
-            l.classList.toggle("active", l.dataset.vista === vista),
-          );
-        document
-          .getElementById("vista-saldos")
-          .classList.toggle("d-none", vista !== "saldos");
-        document
-          .getElementById("vista-registrar")
-          .classList.toggle("d-none", vista !== "registrar");
-        document
-          .getElementById("vista-historial")
-          .classList.toggle("d-none", vista !== "historial");
-        document
-          .getElementById("vista-gastos")
-          .classList.toggle("d-none", vista !== "gastos");
-        document
-          .getElementById("vista-configuracion")
-          .classList.toggle("d-none", vista !== "configuracion");
+  document.querySelectorAll('[data-vista]').forEach(l => l.classList.toggle('active', l.dataset.vista === vista));
+  document.getElementById('vista-saldos').classList.toggle('d-none', vista !== 'saldos');
+  document.getElementById('vista-registrar').classList.toggle('d-none', vista !== 'registrar');
+  document.getElementById('vista-historial').classList.toggle('d-none', vista !== 'historial');
+  document.getElementById('vista-gastos').classList.toggle('d-none', vista !== 'gastos');
+  document.getElementById('vista-configuracion').classList.toggle('d-none', vista !== 'configuracion');
+  document.getElementById('vista-extracto').classList.toggle('d-none', vista !== 'extracto');
 
-        if (!catalogos && (vista === "registrar" || vista === "historial")) {
-          await inicializarCatalogosYFormularios();
-        }
-        if (vista === "saldos") cargarSaldos();
-        if (vista === "gastos") await inicializarGastos();
-        if (vista === "configuracion") await inicializarConfiguracion();
-      }
+  if (!catalogos && (vista === 'registrar' || vista === 'historial' || vista === 'extracto')) {
+    await inicializarCatalogosYFormularios();
+  }
+  if (vista === 'saldos') cargarSaldos();
+  if (vista === 'gastos') await inicializarGastos();
+  if (vista === 'configuracion') await inicializarConfiguracion();
+  if (vista === 'extracto') inicializarExtracto();
+}
 
       document.querySelectorAll("[data-vista]").forEach((link) => {
         link.addEventListener("click", (e) => {
@@ -2958,6 +3066,127 @@ function limpiarFormCompuesto() {
       document
         .getElementById("btnActualizarGastos")
         .addEventListener("click", cargarDatosGastos);
+
+      // --- VISTA 6: EXTRACTO DE CUENTA (IMPRIMIBLE) ---
+let extractoInicializado = false;
+
+function inicializarExtracto() {
+  const selCuenta = document.getElementById('extCuenta');
+  const valorPrevio = selCuenta.value;
+  selCuenta.innerHTML = '<option value="">-- Selecciona una cuenta --</option>';
+
+  if (catalogos && Array.isArray(catalogos.cuentas)) {
+    catalogos.cuentas.forEach(c => selCuenta.add(new Option(c, c)));
+  }
+  if (valorPrevio) selCuenta.value = valorPrevio;
+
+  if (!extractoInicializado) {
+    document.getElementById('extDesde').value = primerDiaMesISO;
+    document.getElementById('extHasta').value = hoyISO;
+    extractoInicializado = true;
+  }
+}
+
+function formatearMonedaExt(valor, moneda) {
+  const decimales = moneda === 'COP' ? 0 : 2;
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: moneda === 'VEF' ? 'VES' : moneda,
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: decimales
+  }).format(valor);
+}
+
+document.getElementById('formFiltroExtracto').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const cuenta = document.getElementById('extCuenta').value;
+  const desde = document.getElementById('extDesde').value;
+  const hasta = document.getElementById('extHasta').value;
+
+  if (!cuenta || !desde || !hasta) {
+    return alert('Los tres filtros (Cuenta, Fecha Inicio y Fecha Final) son obligatorios.');
+  }
+
+  const btn = document.getElementById('btnGenerarExtracto');
+  const btnPrint = document.getElementById('btnImprimirExtracto');
+  btn.disabled = true;
+  btn.textContent = 'Generando...';
+  btnPrint.disabled = true;
+
+  try {
+    const res = await obtenerExtractoCuentaWeb(cuenta, desde, hasta);
+    const fmt = (v) => formatearMonedaExt(v, res.moneda);
+
+    // Encabezado
+    document.getElementById('extDocTituloCuenta').textContent = res.cuenta.nombre;
+    document.getElementById('extDocSubtitulo').textContent =
+      `${res.cuenta.institucion || 'Sin institución'} • ${res.cuenta.tipo_cuenta || 'Cuenta'} • Moneda: ${res.moneda}`;
+    document.getElementById('extDocPeriodo').textContent = `${res.fechaDesde} al ${res.fechaHasta}`;
+    document.getElementById('extDocFechaEmision').textContent = `Emitido: ${hoyISO}`;
+
+    // Resumen
+    document.getElementById('extResInicial').textContent = fmt(res.saldoInicial);
+    document.getElementById('extResIngresos').textContent = fmt(res.totalIngresos);
+    document.getElementById('extResEgresos').textContent = fmt(res.totalEgresos);
+    document.getElementById('extResFinal').textContent = fmt(res.saldoFinal);
+
+    // Filas de tabla: Fila 0 = Saldo Inicial
+    let filasHTML = `
+      <tr class="table-secondary fw-bold">
+        <td>${res.fechaDesde}</td>
+        <td colspan="2">SALDO INICIAL ANTERIOR AL PERIODO</td>
+        <td class="text-end">—</td>
+        <td class="text-end">${fmt(res.saldoInicial)}</td>
+      </tr>`;
+
+    if (res.movimientos.length === 0) {
+      filasHTML += `
+        <tr>
+          <td colspan="5" class="text-center text-muted py-3 fst-italic">
+            No se registraron movimientos en esta cuenta durante el rango seleccionado.
+          </td>
+        </tr>`;
+    } else {
+      filasHTML += res.movimientos.map(m => {
+        const claseMonto = m.monto >= 0 ? 'text-success' : 'text-danger';
+        const signo = m.monto > 0 ? '+' : '';
+        const catTexto = m.subcategoria ? `${m.categoria} / ${m.subcategoria}` : m.categoria;
+        const memoHTML = m.memo ? `<br><small class="text-muted">${m.memo}</small>` : '';
+
+        return `
+          <tr>
+            <td class="text-nowrap">${m.fecha}</td>
+            <td><strong>${m.beneficiario}</strong>${memoHTML}</td>
+            <td class="small">${catTexto}</td>
+            <td class="text-end fw-semibold ${claseMonto}">${signo}${fmt(m.monto)}</td>
+            <td class="text-end fw-bold">${fmt(m.saldoAcumulado)}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    // Fila de cierre = Saldo Final
+    filasHTML += `
+      <tr class="table-primary fw-bold">
+        <td>${res.fechaHasta}</td>
+        <td colspan="2">SALDO FINAL AL CIERRE DEL PERIODO</td>
+        <td class="text-end">${fmt(res.totalIngresos + res.totalEgresos)}</td>
+        <td class="text-end">${fmt(res.saldoFinal)}</td>
+      </tr>`;
+
+    document.getElementById('tbodyExtracto').innerHTML = filasHTML;
+    document.getElementById('contenedorDocumentoExtracto').classList.remove('d-none');
+    btnPrint.disabled = false;
+  } catch (err) {
+    alert('Error al generar el extracto: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generar';
+  }
+});
+
+document.getElementById('btnImprimirExtracto').addEventListener('click', () => {
+  window.print();
+});
     </script>
   </body>
 </html>

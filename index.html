@@ -1268,17 +1268,25 @@
         .getElementById("btnSalir")
         .addEventListener("click", cerrarSesion);
 
-      const hoy = new Date();
-      const hoyISO = new Date(Date.now() - hoy.getTimezoneOffset() * 60000)
-        .toISOString()
-        .split("T")[0];
-      const primerDiaMesISO = new Date(
-        hoy.getFullYear(),
-        hoy.getMonth(),
-        1 - hoy.getTimezoneOffset() / 1440,
-      )
-        .toISOString()
-        .split("T")[0];
+      // const hoy = new Date();
+      // const hoyISO = new Date(Date.now() - hoy.getTimezoneOffset() * 60000)
+      //   .toISOString()
+      //   .split("T")[0];
+      // const primerDiaMesISO = new Date(
+      //   hoy.getFullYear(),
+      //   hoy.getMonth(),
+      //   1 - hoy.getTimezoneOffset() / 1440,
+      // )
+      //   .toISOString()
+      //   .split("T")[0];
+
+      const ahoraLocal = new Date();
+const anioActual = ahoraLocal.getFullYear();
+const mesActual = String(ahoraLocal.getMonth() + 1).padStart(2, '0');
+const diaActual = String(ahoraLocal.getDate()).padStart(2, '0');
+
+const hoyISO = `${anioActual}-${mesActual}-${diaActual}`;
+const primerDiaMesISO = `${anioActual}-${mesActual}-01`;
 
       let catalogos = null;
       let idEnEdicion = null;

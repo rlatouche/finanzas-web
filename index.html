@@ -1269,6 +1269,7 @@
       if (!session) throw new Error("Sin sesión");
 
       document.getElementById("usuarioEmail").textContent = session.user.email;
+      activarVista('saldos');
       document
         .getElementById("btnSalir")
         .addEventListener("click", cerrarSesion);

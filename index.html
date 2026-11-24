@@ -146,41 +146,46 @@
     </nav>
 
     <main class="container pb-5">
-      <!-- =================================================================== -->
-      <!-- VISTA 1: RESUMEN DE SALDOS                                          -->
-      <!-- =================================================================== -->
-      <section id="vista-saldos">
-        <div
-          class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2"
-        >
-          <h5 class="fw-bold text-dark mb-0">Resumen de Saldos</h5>
-          <div class="d-flex align-items-center gap-2">
-            <label for="fechaCorte" class="small text-muted mb-0">Corte:</label>
-            <input
-              type="date"
-              id="fechaCorte"
-              class="form-control form-control-sm"
-              style="width: 155px"
-            />
-            <button id="btnConsultarSaldos" class="btn btn-primary btn-sm">
-              Actualizar
-            </button>
-          </div>
-        </div>
+<!-- =================================================================== -->
+<!-- VISTA 1: SALDOS POR CUENTA                                          -->
+<!-- =================================================================== -->
+<section id="vista-saldos">
+  <!-- Panel de Filtros (Fecha Corte, Moneda, Institución y Tipo) -->
+  <div class="card p-3 mb-3 shadow-sm border-0">
+    <div class="row g-2">
+      <div class="col-md-6">
+        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Fecha Corte:</label>
+        <input type="date" id="saldosFechaCorte" class="form-control form-control-sm" />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Moneda:</label>
+        <select id="saldosFiltroMoneda" class="form-select form-select-sm">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <select id="saldosFiltroInstitucion" class="form-select form-select-sm">
+          <option value="">Institución: Todas</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <select id="saldosFiltroTipo" class="form-select form-select-sm">
+          <option value="">Tipo: Todos</option>
+        </select>
+      </div>
+    </div>
+  </div>
 
-        <div class="card card-total p-4 mb-4 shadow-sm text-center">
-          <div class="small text-uppercase opacity-75">
-            Patrimonio Neto Consolidado (COP)
-          </div>
-          <h2 id="totalConsolidado" class="fw-bold mb-0 mt-1">$ 0</h2>
-        </div>
+  <!-- Tarjeta Total Filtrado (en COP) -->
+  <div class="card p-3 mb-3 shadow-sm border border-primary bg-primary-subtle text-center">
+    <div class="small fw-bold text-primary text-uppercase">TOTAL FILTRADO</div>
+    <div id="saldosTotalFiltrado" class="fs-2 fw-bold text-primary">$ 0</div>
+    <div id="saldosInfoTasas" class="text-muted" style="font-size: 0.75rem;"></div>
+  </div>
 
-        <div id="contenedorCuentas" class="d-flex flex-column gap-2">
-          <div class="text-center text-muted py-4">
-            Cargando saldos desde Supabase...
-          </div>
-        </div>
-      </section>
+  <!-- Lista de Cuentas Filtradas -->
+  <div id="listaSaldos" class="d-flex flex-column gap-2"></div>
+</section>
 
       <!-- =================================================================== -->
       <!-- VISTA 2: REGISTRAR / EDITAR MOVIMIENTO                              -->
@@ -1330,52 +1335,176 @@ const primerDiaMesISO = `${anioActual}-${mesActual}-01`;
         if (moneda === "COP") return fmtCOP.format(num);
         return `${moneda} ${num.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       }
+// --- VISTA 1: SALDOS CON FILTROS ---
+let cacheSaldosActual = [];
+let tasasSaldosActual = {};
 
-      // --- VISTA 1: SALDOS ---
-      const inputFecha = document.getElementById("fechaCorte");
-      inputFecha.value = hoyISO;
+function formatearMonedaSaldos(valor, moneda) {
+  const cod = (moneda || 'COP').toUpperCase();
+  const decimales = cod === 'COP' ? 0 : 2;
+  const formatted = new Intl.NumberFormat('es-CO', {
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: decimales
+  }).format(valor);
+  return cod === 'COP' ? `$ ${formatted}` : `${cod} ${formatted}`;
+}
 
-      async function cargarSaldos() {
-        const contenedor = document.getElementById("contenedorCuentas");
-        contenedor.innerHTML =
-          '<div class="text-center text-muted py-4">Calculando saldos...</div>';
-        try {
-          const cuentas = await obtenerResumenSaldosWeb(inputFecha.value);
-          let totalCOP = 0;
-          contenedor.innerHTML = cuentas
-            .map((c) => {
-              totalCOP += c.saldoCOP;
-              const colorMonto =
-                c.saldoOriginal < 0 ? "text-danger" : "text-success";
-              const subCOP =
-                c.moneda !== "COP"
-                  ? `<div class="text-muted small">≈ ${fmtCOP.format(c.saldoCOP)}</div>`
-                  : "";
-              return `
-            <div class="card cuenta-item bg-white px-3 py-2 shadow-sm">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <div class="fw-bold text-dark">${c.nombre}</div>
-                  <div class="text-muted small">${c.institucion || "[Sin Institución]"} | ${c.moneda}</div>
-                </div>
-                <div class="text-end">
-                  <div class="fw-bold ${colorMonto}">${formatearMoneda(c.saldoOriginal, c.moneda)}</div>
-                  ${subCOP}
-                </div>
-              </div>
-            </div>`;
-            })
-            .join("");
-          document.getElementById("totalConsolidado").textContent =
-            fmtCOP.format(totalCOP);
-        } catch (err) {
-          contenedor.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
-        }
-      }
-      document
-        .getElementById("btnConsultarSaldos")
-        .addEventListener("click", cargarSaldos);
-      cargarSaldos();
+function poblarSelectoresSaldos(cuentas) {
+  const selMoneda = document.getElementById('saldosFiltroMoneda');
+  const selInst = document.getElementById('saldosFiltroInstitucion');
+  const selTipo = document.getElementById('saldosFiltroTipo');
+
+  const prevMon = selMoneda.value;
+  const prevInst = selInst.value;
+  const prevTipo = selTipo.value;
+
+  const monedas = [...new Set(cuentas.map(c => (c.moneda || c.moneda_codigo || 'COP').toUpperCase()))].sort();
+  const instituciones = [...new Set(cuentas.map(c => (c.institucion || 'Sin Institución').trim()))].sort();
+  const tipos = [...new Set(cuentas.map(c => (c.tipo_cuenta || c.tipo || 'Sin Tipo').trim()))].sort();
+
+  selMoneda.innerHTML = '<option value="">Todas</option>';
+  monedas.forEach(m => selMoneda.add(new Option(m, m)));
+
+  selInst.innerHTML = '<option value="">Institución: Todas</option>';
+  instituciones.forEach(i => selInst.add(new Option(i, i)));
+
+  selTipo.innerHTML = '<option value="">Tipo: Todos</option>';
+  tipos.forEach(t => selTipo.add(new Option(t, t)));
+
+  if (monedas.includes(prevMon)) selMoneda.value = prevMon;
+  if (instituciones.includes(prevInst)) selInst.value = prevInst;
+  if (tipos.includes(prevTipo)) selTipo.value = prevTipo;
+}
+
+function renderizarSaldosFiltrados() {
+  const fMoneda = document.getElementById('saldosFiltroMoneda').value;
+  const fInst = document.getElementById('saldosFiltroInstitucion').value;
+  const fTipo = document.getElementById('saldosFiltroTipo').value;
+
+  const filtradas = cacheSaldosActual.filter(c => {
+    const mon = (c.moneda || c.moneda_codigo || 'COP').toUpperCase();
+    const inst = (c.institucion || 'Sin Institución').trim();
+    const tipo = (c.tipo_cuenta || c.tipo || 'Sin Tipo').trim();
+
+    if (fMoneda && mon !== fMoneda) return false;
+    if (fInst && inst !== fInst) return false;
+    if (fTipo && tipo !== fTipo) return false;
+    return true;
+  });
+
+  // Sumar el equivalente en COP de las cuentas filtradas
+  const totalCOP = filtradas.reduce((acc, c) => acc + (parseFloat(c.saldoCOP) || 0), 0);
+  document.getElementById('saldosTotalFiltrado').textContent = formatearMonedaSaldos(totalCOP, 'COP');
+
+  const contenedor = document.getElementById('listaSaldos');
+  if (filtradas.length === 0) {
+    contenedor.innerHTML = `
+      <div class="text-center text-muted py-4 bg-white rounded shadow-sm">
+        No hay cuentas que coincidan con los filtros seleccionados.
+      </div>`;
+    return;
+  }
+
+  contenedor.innerHTML = filtradas.map(c => {
+    const mon = (c.moneda || c.moneda_codigo || 'COP').toUpperCase();
+    const inst = c.institucion || 'Sin Institución';
+    const tipo = c.tipo_cuenta || c.tipo || '';
+    const saldoOrig = parseFloat(c.saldo) || 0;
+    const saldoCop = parseFloat(c.saldoCOP) || 0;
+    const claseColor = saldoOrig < 0 ? 'text-danger' : 'text-success';
+
+    const subLineaCOP = mon !== 'COP'
+      ? `<div class="small text-muted">≈ ${formatearMonedaSaldos(saldoCop, 'COP')}</div>`
+      : '';
+
+    return `
+      <div class="card p-3 shadow-sm border-0">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-bold text-dark">${c.nombre}</div>
+            <div class="small text-muted">${inst}${tipo ? ' • ' + tipo : ''}</div>
+          </div>
+          <div class="text-end">
+            <div class="fw-bold fs-6 ${claseColor}">${formatearMonedaSaldos(saldoOrig, mon)}</div>
+            ${subLineaCOP}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function cargarSaldos() {
+  const inpFecha = document.getElementById('saldosFechaCorte');
+  if (!inpFecha.value) inpFecha.value = hoyISO;
+
+  const contenedor = document.getElementById('listaSaldos');
+  contenedor.innerHTML = '<div class="text-center text-muted py-4">Cargando saldos...</div>';
+
+  try {
+    // Ajusta el nombre de la función importada de js/cuentas.js si en tu archivo se llama distinto
+    const respuesta = await obtenerSaldosWeb(inpFecha.value);
+
+    // Soporta tanto si devuelve { cuentas, tasas } como si devuelve directamente un array
+    cacheSaldosActual = Array.isArray(respuesta) ? respuesta : (respuesta.cuentas || []);
+    tasasSaldosActual = respuesta.tasas || {};
+
+    poblarSelectoresSaldos(cacheSaldosActual);
+    renderizarSaldosFiltrados();
+  } catch (err) {
+    contenedor.innerHTML = `<div class="alert alert-danger">Error al cargar saldos: ${err.message}</div>`;
+  }
+}
+
+// Listeners de los 4 controles de filtro
+document.getElementById('saldosFechaCorte').addEventListener('change', cargarSaldos);
+document.getElementById('saldosFiltroMoneda').addEventListener('change', renderizarSaldosFiltrados);
+document.getElementById('saldosFiltroInstitucion').addEventListener('change', renderizarSaldosFiltrados);
+document.getElementById('saldosFiltroTipo').addEventListener('change', renderizarSaldosFiltrados);
+      // // --- VISTA 1: SALDOS ---
+      // const inputFecha = document.getElementById("fechaCorte");
+      // inputFecha.value = hoyISO;
+
+      // async function cargarSaldos() {
+      //   const contenedor = document.getElementById("contenedorCuentas");
+      //   contenedor.innerHTML =
+      //     '<div class="text-center text-muted py-4">Calculando saldos...</div>';
+      //   try {
+      //     const cuentas = await obtenerResumenSaldosWeb(inputFecha.value);
+      //     let totalCOP = 0;
+      //     contenedor.innerHTML = cuentas
+      //       .map((c) => {
+      //         totalCOP += c.saldoCOP;
+      //         const colorMonto =
+      //           c.saldoOriginal < 0 ? "text-danger" : "text-success";
+      //         const subCOP =
+      //           c.moneda !== "COP"
+      //             ? `<div class="text-muted small">≈ ${fmtCOP.format(c.saldoCOP)}</div>`
+      //             : "";
+      //         return `
+      //       <div class="card cuenta-item bg-white px-3 py-2 shadow-sm">
+      //         <div class="d-flex justify-content-between align-items-center">
+      //           <div>
+      //             <div class="fw-bold text-dark">${c.nombre}</div>
+      //             <div class="text-muted small">${c.institucion || "[Sin Institución]"} | ${c.moneda}</div>
+      //           </div>
+      //           <div class="text-end">
+      //             <div class="fw-bold ${colorMonto}">${formatearMoneda(c.saldoOriginal, c.moneda)}</div>
+      //             ${subCOP}
+      //           </div>
+      //         </div>
+      //       </div>`;
+      //       })
+      //       .join("");
+      //     document.getElementById("totalConsolidado").textContent =
+      //       fmtCOP.format(totalCOP);
+      //   } catch (err) {
+      //     contenedor.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+      //   }
+      // }
+      // document
+      //   .getElementById("btnConsultarSaldos")
+      //   .addEventListener("click", cargarSaldos);
+      // cargarSaldos();
 
       // --- INICIALIZACIÓN DE CATÁLOGOS ---
       async function inicializarCatalogosYFormularios() {

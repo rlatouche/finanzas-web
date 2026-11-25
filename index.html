@@ -184,6 +184,7 @@
       </div>
     </div>
     <div class="text-muted mt-2" style="font-size: 0.75rem;" id="tasaInicioFecha"></div>
+    <div class="text-muted mt-1" style="font-size: 0.75rem;" id="repoUltimaActualizacion"></div>
   </div>
 </section>
 <!-- =================================================================== -->
@@ -1374,6 +1375,8 @@ async function cargarBienvenida() {
   document.getElementById('bienvenidaFecha').textContent =
     textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1);
 
+  // 1. Consultar tasas vigentes en Supabase
+
   try {
     const { data, error } = await supabase
       .from('tasas_cambio')
@@ -1399,6 +1402,31 @@ async function cargarBienvenida() {
   } catch (e) {
     console.warn('No se pudieron cargar las tasas en bienvenida:', e.message);
   }
+  // 2. Consultar fecha/hora del último commit en GitHub (rlatouche/finanzas-web)
+  try {
+    const resRepo = await fetch('https://api.github.com/repos/rlatouche/finanzas-web/commits/main', {
+      headers: { Accept: 'application/vnd.github.v3+json' }
+    });
+    if (resRepo.ok) {
+      const commitData = await resRepo.json();
+      const fechaISO = commitData?.commit?.committer?.date || commitData?.commit?.author?.date;
+      if (fechaISO) {
+        const fechaLocal = new Date(fechaISO).toLocaleString('es-CO', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+        document.getElementById('repoUltimaActualizacion').textContent =
+          `Última actualización del sistema: ${fechaLocal}`;
+      }
+    }
+  } catch (e) {
+    console.warn('No se pudo consultar la última actualización en GitHub:', e.message);
+  }
+  
 }
       document.querySelectorAll("[data-vista]").forEach((link) => {
         link.addEventListener("click", (e) => {

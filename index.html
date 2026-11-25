@@ -1271,6 +1271,25 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module">
+
+      const ahoraLocal = new Date();
+const anioActual = ahoraLocal.getFullYear();
+const mesActual = String(ahoraLocal.getMonth() + 1).padStart(2, '0');
+const diaActual = String(ahoraLocal.getDate()).padStart(2, '0');
+
+const hoyISO = `${anioActual}-${mesActual}-${diaActual}`;
+      
+const primerDiaMesISO = `${anioActual}-${mesActual}-01`;
+      const inpFechaCorte = document.getElementById('saldosFechaCorte');
+if (inpFechaCorte && !inpFechaCorte.value) {
+  inpFechaCorte.value = hoyISO;
+}
+
+      let catalogos = null;
+      let idEnEdicion = null;
+      let movimientosHistorial = [];
+      let saldoFinalSistemaNum = 0;
+
       import { verificarSesion, cerrarSesion } from "./js/auth.js";
       import { obtenerResumenSaldosWeb } from "./js/saldos.js";
       import {
@@ -1326,24 +1345,7 @@
       //   .toISOString()
       //   .split("T")[0];
 
-      const ahoraLocal = new Date();
-const anioActual = ahoraLocal.getFullYear();
-const mesActual = String(ahoraLocal.getMonth() + 1).padStart(2, '0');
-const diaActual = String(ahoraLocal.getDate()).padStart(2, '0');
-
-const hoyISO = `${anioActual}-${mesActual}-${diaActual}`;
       
-const primerDiaMesISO = `${anioActual}-${mesActual}-01`;
-      const inpFechaCorte = document.getElementById('saldosFechaCorte');
-if (inpFechaCorte && !inpFechaCorte.value) {
-  inpFechaCorte.value = hoyISO;
-}
-
-      let catalogos = null;
-      let idEnEdicion = null;
-      let movimientosHistorial = [];
-      let saldoFinalSistemaNum = 0;
-
       // --- NAVEGACIÓN ENTRE VISTAS ---
 async function activarVista(vista) {
   document.querySelectorAll('[data-vista]').forEach(l => l.classList.toggle('active', l.dataset.vista === vista));

@@ -872,6 +872,114 @@
             </div>
           </div>
         </div>
+<!-- GESTOR DE MONEDAS -->
+<div class="card p-3 mb-3 shadow-sm border-0">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="fw-bold text-primary mb-0">💱 Gestión de Monedas</h6>
+    <button type="button" id="btnNuevaMonedaReset" class="btn btn-outline-secondary btn-sm d-none">
+      Cancelar Edición
+    </button>
+  </div>
+
+  <div id="alertaMonedas" class="alert d-none py-2 small" role="alert"></div>
+
+  <!-- Formulario Crear / Editar Moneda -->
+  <form id="formMoneda" class="row g-2 align-items-end mb-3 pb-3 border-bottom">
+    <input type="hidden" id="monModoEdicion" value="0" />
+
+    <div class="col-6 col-md-2">
+      <label class="form-label small fw-bold text-muted mb-1">Código ISO *</label>
+      <input
+        type="text"
+        id="monCodigo"
+        class="form-control form-control-sm text-uppercase"
+        placeholder="Ej: CAD"
+        maxlength="10"
+        required
+      />
+    </div>
+
+    <div class="col-6 col-md-4">
+      <label class="form-label small fw-bold text-muted mb-1">Nombre *</label>
+      <input
+        type="text"
+        id="monNombre"
+        class="form-control form-control-sm"
+        placeholder="Ej: Dólar Canadiense"
+        required
+      />
+    </div>
+
+    <div class="col-4 col-md-2">
+      <label class="form-label small fw-bold text-muted mb-1">Símbolo</label>
+      <input
+        type="text"
+        id="monSimbolo"
+        class="form-control form-control-sm"
+        placeholder="$"
+        value="$"
+        maxlength="6"
+        required
+      />
+    </div>
+
+    <div class="col-4 col-md-2">
+      <label class="form-label small fw-bold text-muted mb-1">Decimales</label>
+      <input
+        type="number"
+        id="monDecimales"
+        class="form-control form-control-sm"
+        min="0"
+        max="6"
+        value="2"
+        required
+      />
+    </div>
+
+    <div class="col-4 col-md-2">
+      <button type="submit" id="btnGuardarMoneda" class="btn btn-primary btn-sm w-100 fw-bold">
+        Agregar
+      </button>
+    </div>
+
+    <div class="col-12 mt-2 d-flex flex-wrap gap-4">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="monMostrarInicio" checked />
+        <label class="form-check-label small" for="monMostrarInicio">
+          Mostrar tasa en pantalla de Inicio
+        </label>
+      </div>
+      <div class="form-check" id="boxMonActiva">
+        <input class="form-check-input" type="checkbox" id="monActiva" checked />
+        <label class="form-check-label small" for="monActiva">
+          Moneda activa para nuevas cuentas/movimientos
+        </label>
+      </div>
+    </div>
+  </form>
+
+  <!-- Tabla de Monedas Registradas -->
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th class="text-center">Símbolo</th>
+          <th class="text-center">Decimales</th>
+          <th class="text-center">En Inicio</th>
+          <th class="text-center">Estado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyConfigMonedas">
+        <tr>
+          <td colspan="7" class="text-center text-muted py-3">Cargando monedas...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
       </section>
 
       <!-- MODAL: CREAR / EDITAR CUENTA -->

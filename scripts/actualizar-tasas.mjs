@@ -1,5 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
-
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
 
@@ -8,7 +6,12 @@ if (!supabaseUrl || !supabaseKey) {
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const headersSupabase = {
+  apikey: supabaseKey,
+  Authorization: `Bearer ${supabaseKey}`,
+  'Content-Type': 'application/json',
+  Prefer: 'resolution=merge-duplicates,return=minimal'
+};
 
 // Fecha actual en zona horaria de Bogotá (YYYY-MM-DD)
 const fechaHoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
@@ -17,14 +20,19 @@ async function actualizarTasas() {
   console.log(`🔄 Iniciando sincronización de tasas para: ${fechaHoy}`);
 
   // 1. Obtener dinámicamente las monedas activas desde Supabase
-  const { data: monedasDB, error: errMon } = await supabase
-    .from('monedas')
-    .select('codigo, es_base')
-    .eq('activa', true);
+  const resMon = await fetch(
+    `${supabaseUrl}/rest/v1/monedas?select=codigo,es_base&activa=eq.true`,
+    { headers: headersSupabase }
+  );
+  if (!resMon.ok) {
+    throw new Error(`Error leyendo catálogo de monedas (${resMon.status}): ${await resMon.text()}`);
+  }
 
-  if (errMon) throw new Error(`Error leyendo catálogo de monedas: ${errMon.message}`);
+  const monedasDB = await resMon.json();
+  const monedasActivas = (monedasDB || [])
+    .filter(m => !m.es_base)
+    .map(m => m.codigo.toUpperCase());
 
-  const monedasActivas = (monedasDB || []).filter(m => !m.es_base).map(m => m.codigo.toUpperCase());
   console.log(`📋 Monedas activas a consultar: ${monedasActivas.join(', ')}`);
 
   // 2. Consultar API pública de tasas base COP (open.er-api.com)
@@ -59,32 +67,37 @@ async function actualizarTasas() {
     }
   }
 
-  // 4. Guardar en la tabla vertical tasa_monedas
-  const { error: errUpsertVert } = await supabase
-    .from('tasa_monedas')
-    .upsert(filasVerticales, { onConflict: 'fecha,moneda_codigo' });
-
-  if (errUpsertVert) {
-    throw new Error(`Error guardando en tasa_monedas: ${errUpsertVert.message}`);
+  // 4. Upsert en la tabla vertical tasa_monedas
+  const resVert = await fetch(
+    `${supabaseUrl}/rest/v1/tasa_monedas?on_conflict=fecha,moneda_codigo`,
+    {
+      method: 'POST',
+      headers: headersSupabase,
+      body: JSON.stringify(filasVerticales)
+    }
+  );
+  if (!resVert.ok) {
+    throw new Error(`Error guardando en tasa_monedas (${resVert.status}): ${await resVert.text()}`);
   }
   console.log('✅ Tabla vertical tasa_monedas actualizada:', tasasMapa);
 
-  // 5. Compatibilidad temporal con tabla legacy tasas_cambio (columna vef recibe tasasMapa.VES)
+  // 5. Compatibilidad temporal con tabla legacy tasas_cambio
   if (tasasMapa.USD && tasasMapa.EUR && tasasMapa.VES) {
-    const { error: errLegacy } = await supabase
-      .from('tasas_cambio')
-      .upsert(
-        {
+    const resLegacy = await fetch(
+      `${supabaseUrl}/rest/v1/tasas_cambio?on_conflict=fecha`,
+      {
+        method: 'POST',
+        headers: headersSupabase,
+        body: JSON.stringify({
           fecha: fechaHoy,
           usd: tasasMapa.USD,
           eur: tasasMapa.EUR,
           vef: tasasMapa.VES
-        },
-        { onConflict: 'fecha' }
-      );
-
-    if (errLegacy) {
-      console.warn(`⚠️ Aviso actualizando tabla legacy tasas_cambio: ${errLegacy.message}`);
+        })
+      }
+    );
+    if (!resLegacy.ok) {
+      console.warn(`⚠️ Aviso actualizando tabla legacy tasas_cambio: ${await resLegacy.text()}`);
     } else {
       console.log('✅ Tabla legacy tasas_cambio sincronizada.');
     }

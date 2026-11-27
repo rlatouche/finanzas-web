@@ -125,16 +125,14 @@ async function asegurarCategoriaWeb(cat, sub, tipo) {
   let tipoNorm = tipo || "Gasto";
   if (tipoNorm.toLowerCase() === "egreso") tipoNorm = "Gasto";
 
-  const { error } = await supabase
-    .from("categorias")
-    .upsert(
-      {
-        categoria: cat.trim(),
-        subcategoria: (sub || "").trim(),
-        tipo: tipoNorm,
-      },
-      { onConflict: "categoria,subcategoria,tipo" },
-    );
+  const { error } = await supabase.from("categorias").upsert(
+    {
+      categoria: cat.trim(),
+      subcategoria: (sub || "").trim(),
+      tipo: tipoNorm,
+    },
+    { onConflict: "categoria,subcategoria,tipo" },
+  );
   if (error) console.warn("Aviso categoría:", error.message);
 }
 
@@ -345,16 +343,14 @@ export async function cargarPlantillaWeb(nombre) {
 }
 
 export async function guardarPlantillaWeb(nombre, estructura) {
-  const { error } = await supabase
-    .from("plantillas_asientos")
-    .upsert(
-      {
-        nombre: nombre.trim(),
-        estructura,
-        actualizado_en: new Date().toISOString(),
-      },
-      { onConflict: "nombre" },
-    );
+  const { error } = await supabase.from("plantillas_asientos").upsert(
+    {
+      nombre: nombre.trim(),
+      estructura,
+      actualizado_en: new Date().toISOString(),
+    },
+    { onConflict: "nombre" },
+  );
   if (error) throw error;
   return `✅ Plantilla '${nombre}' guardada con éxito.`;
 }

@@ -109,14 +109,15 @@ export async function cambiarEstadoMonedaWeb(codigo, nuevoEstado) {
  */
 export function formatearMontoDinamico(valor, codigoMoneda, mapaMonedas = {}) {
   const num = Number(valor || 0);
-  const cod = (codigoMoneda || 'COP').toUpperCase();
+  const cod = (codigoMoneda || "COP").toUpperCase();
   const info = mapaMonedas[cod];
-  const decimales = info && typeof info.decimales === 'number' ? info.decimales : 2;
-  const simbolo = info?.simbolo || '$';
+  const decimales =
+    info && typeof info.decimales === "number" ? info.decimales : 2;
+  const simbolo = info?.simbolo || "$";
 
-  const formateado = new Intl.NumberFormat('es-CO', {
+  const formateado = new Intl.NumberFormat("es-CO", {
     minimumFractionDigits: decimales,
-    maximumFractionDigits: decimales
+    maximumFractionDigits: decimales,
   }).format(num);
 
   return `${simbolo} ${formateado} ${cod}`;
@@ -128,13 +129,13 @@ export function formatearMontoDinamico(valor, codigoMoneda, mapaMonedas = {}) {
  */
 export async function obtenerTasasVigentesMapa(fechaLimite = null) {
   let query = supabase
-    .from('tasa_monedas')
-    .select('fecha, moneda_codigo, tasa_a_cop')
-    .order('fecha', { ascending: false })
+    .from("tasa_monedas")
+    .select("fecha, moneda_codigo, tasa_a_cop")
+    .order("fecha", { ascending: false })
     .limit(100);
 
   if (fechaLimite) {
-    query = query.lte('fecha', fechaLimite);
+    query = query.lte("fecha", fechaLimite);
   }
 
   const { data, error } = await query;
@@ -143,9 +144,9 @@ export async function obtenerTasasVigentesMapa(fechaLimite = null) {
   const mapaTasas = { COP: 1 };
   let fechaMasReciente = null;
 
-  for (const fila of (data || [])) {
-    const cod = (fila.moneda_codigo || '').toUpperCase();
-    if (!fechaMasReciente && cod !== 'COP') {
+  for (const fila of data || []) {
+    const cod = (fila.moneda_codigo || "").toUpperCase();
+    if (!fechaMasReciente && cod !== "COP") {
       fechaMasReciente = fila.fecha;
     }
     // Como está ordenado por fecha descendente, la primera ocurrencia es la más reciente

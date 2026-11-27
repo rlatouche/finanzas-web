@@ -3210,6 +3210,40 @@
         .getElementById("btnNuevaCuenta")
         .addEventListener("click", () => abrirModalCuentaCfg(null));
 
+        document
+        .getElementById("btnGuardarCuentaCfg")
+        .addEventListener("click", async () => {
+          const nombre = document.getElementById("cfgAccNombre").value.trim();
+          const institucion = document
+            .getElementById("cfgAccInstitucion")
+            .value.trim();
+          if (!nombre || !institucion)
+            return alert("Completa al menos Institución y Nombre.");
+
+          const btn = document.getElementById("btnGuardarCuentaCfg");
+          btn.disabled = true;
+          btn.textContent = "Guardando...";
+          try {
+            const msg = await guardarCuentaWeb({
+              idFila: document.getElementById("cfgAccId").value,
+              institucion,
+              tipo: document.getElementById("cfgAccTipo").value,
+              nombre,
+              fecha: document.getElementById("cfgAccFecha").value,
+              moneda: document.getElementById("cfgAccMoneda").value,
+              estado: document.getElementById("cfgAccEstado").value,
+            });
+            alert(msg);
+            modalCuentaBS.hide();
+            await renderCuentasCfg();
+            await refrescarCatalogosGlobales();
+          } catch (err) {
+            alert("Error: " + err.message);
+          } finally {
+            btn.disabled = false;
+            btn.textContent = "Guardar Cuenta";
+          }
+
       // 2. Beneficiarios
       async function renderBeneficiariosCfg() {
         const cont = document.getElementById("tablaBenCfg");

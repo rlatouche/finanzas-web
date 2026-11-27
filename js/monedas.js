@@ -103,3 +103,56 @@ export async function cambiarEstadoMonedaWeb(codigo, nuevoEstado) {
   if (error) throw error;
   return `Moneda ${cod} ${nuevoEstado ? "activada" : "desactivada"}.`;
 }
+
+/**
+ * Formatea un valor numérico respetando los decimales y símbolo configurados para la moneda.
+ */
+export function formatearMontoDinamico(valor, codigoMoneda, mapaMonedas = {}) {
+  const num = Number(valor || 0);
+  const cod = (codigoMoneda || 'COP').toUpperCase();
+  const info = mapaMonedas[cod];
+  const decimales = info && typeof info.decimales === 'number' ? info.decimales : 2;
+  const simbolo = info?.simbolo || '$';
+
+  const formateado = new Intl.NumberFormat('es-CO', {
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: decimales
+  }).format(num);
+
+  return `${simbolo} ${formateado} ${cod}`;
+}
+
+/**
+ * Obtiene la última tasa registrada en `tasa_monedas` (hasta una fecha límite opcional)
+ * para cada moneda activa, devolviendo un mapa { USD: 4350.12, EUR: 4680.50, COP: 1, ... }
+ */
+export async function obtenerTasasVigentesMapa(fechaLimite = null) {
+  let query = supabase
+    .from('tasa_monedas')
+    .select('fecha, moneda_codigo, tasa_a_cop')
+    .order('fecha', { ascending: false })
+    .limit(100);
+
+  if (fechaLimite) {
+    query = query.lte('fecha', fechaLimite);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const mapaTasas = { COP: 1 };
+  let fechaMasReciente = null;
+
+  for (const fila of (data || [])) {
+    const cod = (fila.moneda_codigo || '').toUpperCase();
+    if (!fechaMasReciente && cod !== 'COP') {
+      fechaMasReciente = fila.fecha;
+    }
+    // Como está ordenado por fecha descendente, la primera ocurrencia es la más reciente
+    if (mapaTasas[cod] === undefined) {
+      mapaTasas[cod] = Number(fila.tasa_a_cop);
+    }
+  }
+
+  return { tasas: mapaTasas, fecha: fechaMasReciente };
+}

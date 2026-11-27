@@ -3271,6 +3271,143 @@ function limpiarFormCompuesto() {
           await renderCategoriasCfg();
           await refrescarCatalogosGlobales();
         });
+// --- GESTOR DE MONEDAS EN CONFIGURACIÓN ---
+let listaMonedasConfig = [];
+
+function mostrarAlertaMoneda(texto, tipo = 'success') {
+  const el = document.getElementById('alertaMonedas');
+  el.className = `alert alert-${tipo} py-2 small`;
+  el.textContent = texto;
+  el.classList.remove('d-none');
+  setTimeout(() => el.classList.add('d-none'), 4000);
+}
+
+function resetearFormMoneda() {
+  document.getElementById('formMoneda').reset();
+  document.getElementById('monModoEdicion').value = '0';
+  document.getElementById('monCodigo').readOnly = false;
+  document.getElementById('monSimbolo').value = '$';
+  document.getElementById('monDecimales').value = '2';
+  document.getElementById('monMostrarInicio').checked = true;
+  document.getElementById('monActiva').checked = true;
+  document.getElementById('monActiva').disabled = false;
+  document.getElementById('btnGuardarMoneda').textContent = 'Agregar';
+  document.getElementById('btnNuevaMonedaReset').classList.add('d-none');
+}
+
+async function cargarConfigMonedas() {
+  const tbody = document.getElementById('tbodyConfigMonedas');
+  try {
+    listaMonedasConfig = await obtenerMonedasWeb(false);
+
+    if (listaMonedasConfig.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">No hay monedas registradas.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = listaMonedasConfig.map(m => {
+      const badgeBase = m.es_base ? ' <span class="badge bg-secondary">Base</span>' : '';
+      const badgeInicio = m.mostrar_en_inicio
+        ? '<span class="badge bg-info-subtle text-info-emphasis">Sí</span>'
+        : '<span class="text-muted small">No</span>';
+      const badgeEstado = m.activa
+        ? '<span class="badge bg-success">Activa</span>'
+        : '<span class="badge bg-danger">Inactiva</span>';
+
+      const btnToggle = m.es_base
+        ? ''
+        : `<button type="button" class="btn btn-sm ${m.activa ? 'btn-outline-danger' : 'btn-outline-success'} btn-toggle-mon" data-cod="${m.codigo}" data-act="${m.activa ? '0' : '1'}" title="${m.activa ? 'Desactivar' : 'Activar'}">
+             ${m.activa ? 'Desactivar' : 'Activar'}
+           </button>`;
+
+      return `
+        <tr>
+          <td class="fw-bold">${m.codigo}${badgeBase}</td>
+          <td>${m.nombre}</td>
+          <td class="text-center">${m.simbolo}</td>
+          <td class="text-center">${m.decimales}</td>
+          <td class="text-center">${badgeInicio}</td>
+          <td class="text-center">${badgeEstado}</td>
+          <td class="text-end text-nowrap">
+            <button type="button" class="btn btn-sm btn-outline-primary btn-edit-mon me-1" data-cod="${m.codigo}">
+              ✏️
+            </button>
+            ${btnToggle}
+          </td>
+        </tr>`;
+    }).join('');
+
+    // Listeners Editar
+    tbody.querySelectorAll('.btn-edit-mon').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const m = listaMonedasConfig.find(x => x.codigo === btn.dataset.cod);
+        if (!m) return;
+        document.getElementById('monModoEdicion').value = '1';
+        document.getElementById('monCodigo').value = m.codigo;
+        document.getElementById('monCodigo').readOnly = true;
+        document.getElementById('monNombre').value = m.nombre;
+        document.getElementById('monSimbolo').value = m.simbolo;
+        document.getElementById('monDecimales').value = m.decimales;
+        document.getElementById('monMostrarInicio').checked = Boolean(m.mostrar_en_inicio);
+        document.getElementById('monActiva').checked = Boolean(m.activa);
+        document.getElementById('monActiva').disabled = Boolean(m.es_base);
+        document.getElementById('btnGuardarMoneda').textContent = 'Actualizar';
+        document.getElementById('btnNuevaMonedaReset').classList.remove('d-none');
+      });
+    });
+
+    // Listeners Activar / Desactivar
+    tbody.querySelectorAll('.btn-toggle-mon').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const cod = btn.dataset.cod;
+        const nuevoEstado = btn.dataset.act === '1';
+        try {
+          const msg = await cambiarEstadoMonedaWeb(cod, nuevoEstado);
+          mostrarAlertaMoneda(msg, 'info');
+          catalogos = null; // Forzar recarga de catálogos en formularios
+          await cargarConfigMonedas();
+        } catch (err) {
+          mostrarAlertaMoneda(err.message, 'danger');
+        }
+      });
+    });
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-danger text-center py-3">Error: ${err.message}</td></tr>`;
+  }
+}
+
+document.getElementById('btnNuevaMonedaReset').addEventListener('click', resetearFormMoneda);
+
+document.getElementById('formMoneda').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btnGuardarMoneda');
+  const esEdicion = document.getElementById('monModoEdicion').value === '1';
+  btn.disabled = true;
+
+  try {
+    const msg = await guardarMonedaWeb(
+      {
+        codigo: document.getElementById('monCodigo').value,
+        nombre: document.getElementById('monNombre').value,
+        simbolo: document.getElementById('monSimbolo').value,
+        decimales: document.getElementById('monDecimales').value,
+        mostrar_en_inicio: document.getElementById('monMostrarInicio').checked,
+        activa: document.getElementById('monActiva').checked
+      },
+      esEdicion
+    );
+
+    resetearFormMoneda();
+    catalogos = null; // Invalidar caché de catálogos
+    mostrarAlertaMoneda(msg, 'success');
+    await cargarConfigMonedas();
+  } catch (err) {
+    mostrarAlertaMoneda(err.message, 'danger');
+  } finally {
+    btn.disabled = false;
+  }
+});
+      
       // --- VISTA 5: ANÁLISIS DE GASTOS ---
       let chartGastosInstance = null;
       let datosGastosBrutos = [];

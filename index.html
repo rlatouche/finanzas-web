@@ -1527,12 +1527,7 @@
       let saldoFinalSistemaNum = 0;
 
       // Diccionario global en memoria con la configuración de cada moneda
-      let mapaMonedasGlobal = {
-        COP: { codigo: "COP", simbolo: "$", decimales: 2 },
-        USD: { codigo: "USD", simbolo: "$", decimales: 2 },
-        EUR: { codigo: "EUR", simbolo: "€", decimales: 2 },
-        VES: { codigo: "VES", simbolo: "Bs.", decimales: 2 },
-      };
+      let mapaMonedasGlobal = {};
 
       // Consulta la tabla `monedas` en Supabase y actualiza el diccionario en memoria
       async function refrescarMapaMonedas() {

@@ -121,29 +121,7 @@ async function actualizarTasas() {
   }
   console.log("✅ Tabla vertical tasa_monedas actualizada:", tasasMapa);
 
-  // 6. Compatibilidad temporal con tabla legacy tasas_cambio
-  if (tasasMapa.USD && tasasMapa.EUR && tasasMapa.VES) {
-    const resLegacy = await fetch(
-      `${supabaseUrl}/rest/v1/tasas_cambio?on_conflict=fecha`,
-      {
-        method: "POST",
-        headers: headersSupabase,
-        body: JSON.stringify({
-          fecha: fechaHoy,
-          usd: tasasMapa.USD,
-          eur: tasasMapa.EUR,
-          vef: tasasMapa.VES,
-        }),
-      },
-    );
-    if (!resLegacy.ok) {
-      console.warn(
-        `⚠️ Aviso actualizando tabla legacy tasas_cambio: ${await resLegacy.text()}`,
-      );
-    } else {
-      console.log("✅ Tabla legacy tasas_cambio sincronizada.");
-    }
-  }
+ 
 }
 
 actualizarTasas().catch((err) => {

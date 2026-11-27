@@ -1,26 +1,35 @@
-import { supabase } from "./supabaseClient.js";
+import { supabase } from './supabaseClient.js';
+import {
+  obtenerMonedasWeb,
+  obtenerTasasVigentesMapa,
+  formatearMontoDinamico
+} from './monedas.js';
 
 export async function obtenerResumenSaldosWeb(fechaCorte) {
   const hoy = new Date().toISOString().split("T")[0];
   const fecha = fechaCorte || hoy;
 
-  // 1. Obtener tasa vigente hasta la fecha de corte
-  const { data: tasasRes, error: errTasas } = await supabase
-    .from("tasas_cambio")
-    .select("usd, eur, vef")
-    .lte("fecha", fecha)
-    .order("fecha", { ascending: false })
-    .limit(1);
+ // 1. Obtener catálogo de monedas (activas e inactivas para formatear cuentas históricas) y tasas vigentes
+const [listaMonedas, { tasas, fecha: fechaTasa }] = await Promise.all([
+  obtenerMonedasWeb(false),
+  obtenerTasasVigentesMapa(fechaCorte || null)
+]);
 
-  if (errTasas) throw errTasas;
+// Crear diccionario rápido por código: { COP: { simbolo: '$', decimales: 2 }, ... }
+const mapaMonedas = Object.fromEntries(
+  listaMonedas.map(m => [m.codigo.toUpperCase(), m])
+);
 
-  const tasas = { USD: 1, EUR: 1, VEF: 1, VES: 1, COP: 1 };
-  if (tasasRes && tasasRes.length > 0) {
-    tasas.USD = parseFloat(tasasRes[0].usd) || 1;
-    tasas.EUR = parseFloat(tasasRes[0].eur) || 1;
-    tasas.VEF = parseFloat(tasasRes[0].vef) || 1;
-    tasas.VES = parseFloat(tasasRes[0].vef) || 1;
-  }
+// 2. Al recorrer cada cuenta para convertir su saldo a COP:
+// Antes: const tasa = moneda === 'USD' ? tasas.usd : ...
+// Ahora (100% dinámico para cualquier divisa):
+const codMoneda = (cuenta.moneda || 'COP').toUpperCase();
+const tasaACOP = codMoneda === 'COP' ? 1 : (tasas[codMoneda] || 0);
+const saldoEnCOP = saldoOriginal * tasaACOP;
+
+// 3. Para mostrar el saldo formateado en la moneda original de la cuenta:
+const textoSaldoOriginal = formatearMontoDinamico(saldoOriginal, codMoneda, mapaMonedas);
+  
 
   // 2. Obtener cuentas activas
   const { data: cuentas, error: errCuentas } = await supabase

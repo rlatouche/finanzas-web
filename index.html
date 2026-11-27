@@ -3105,7 +3105,7 @@
         await renderCuentasCfg();
       }
 
-      // 1. Cuentas
+     // 1. Cuentas
       async function renderCuentasCfg() {
         const cont = document.getElementById("tablaCuentasCfg");
         cont.innerHTML =
@@ -3147,28 +3147,33 @@
 
         cont.querySelectorAll(".btn-edit-acc").forEach((btn) => {
           btn.addEventListener("click", () =>
-            abrirModalCuentaCfg(cuentas[parseInt(btn.dataset.idx, 10)]),
+            abrirModalCuentaCfg(cuentas[parseInt(btn.dataset.idx, 10)])
           );
         });
       }
 
       async function poblarSelectMonedasCuenta(
         monedaSeleccionada = "COP",
-        incluirInactivas = false,
+        incluirInactivas = false
       ) {
         const select = document.getElementById("cfgAccMoneda");
         if (!select) return;
 
-        const monedas = await obtenerMonedasWeb(!incluirInactivas);
-        select.innerHTML = monedas
-          .map(
-            (m) =>
-              `<option value="${m.codigo}">${m.codigo} - ${m.nombre}</option>`,
-          )
-          .join("");
+        try {
+          const monedas = await obtenerMonedasWeb(!incluirInactivas);
+          select.innerHTML = monedas
+            .map(
+              (m) =>
+                `<option value="${m.codigo}">${m.codigo} - ${m.nombre}</option>`
+            )
+            .join("");
 
-        if (monedaSeleccionada) {
-          select.value = monedaSeleccionada;
+          if (monedaSeleccionada) {
+            select.value = monedaSeleccionada;
+          }
+        } catch (err) {
+          console.error("Error cargando monedas para cuenta:", err);
+          select.innerHTML = '<option value="COP">COP - Peso Colombiano</option>';
         }
       }
 
@@ -3210,7 +3215,7 @@
         .getElementById("btnNuevaCuenta")
         .addEventListener("click", () => abrirModalCuentaCfg(null));
 
-        document
+      document
         .getElementById("btnGuardarCuentaCfg")
         .addEventListener("click", async () => {
           const nombre = document.getElementById("cfgAccNombre").value.trim();
@@ -3243,8 +3248,7 @@
             btn.disabled = false;
             btn.textContent = "Guardar Cuenta";
           }
-        }
-
+        });
       // 2. Beneficiarios
       async function renderBeneficiariosCfg() {
         const cont = document.getElementById("tablaBenCfg");

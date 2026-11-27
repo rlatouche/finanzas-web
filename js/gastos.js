@@ -1,10 +1,9 @@
-import { supabase } from './supabaseClient.js';
+import { supabase } from "./supabaseClient.js";
 import {
   obtenerMonedasWeb,
   obtenerTasasVigentesMapa,
-  formatearMontoDinamico
-} from './monedas.js';
-
+  formatearMontoDinamico,
+} from "./monedas.js";
 
 export async function obtenerDatosGastosWeb(desde, hasta) {
   let query = supabase

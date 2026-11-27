@@ -1647,46 +1647,46 @@
         document.getElementById("bienvenidaFecha").textContent =
           textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1);
 
-        // 1. Consultar tasas vigentes en Supabase
+        // // 1. Consultar tasas vigentes en Supabase
 
-        try {
-          const { data, error } = await supabase
-            .from("tasas_cambio")
-            .select("fecha, usd, eur, vef")
-            .order("fecha", { ascending: false })
-            .limit(1);
+        // try {
+        //   const { data, error } = await supabase
+        //     .from("tasas_cambio")
+        //     .select("fecha, usd, eur, vef")
+        //     .order("fecha", { ascending: false })
+        //     .limit(1);
 
-          if (!error && data && data.length > 0) {
-            const t = data[0];
-            const fmtCOP = (v, dec = 2) =>
-              new Intl.NumberFormat("es-CO", {
-                style: "currency",
-                currency: "COP",
-                minimumFractionDigits: dec,
-                maximumFractionDigits: dec,
-              }).format(parseFloat(v) || 0);
+        //   if (!error && data && data.length > 0) {
+        //     const t = data[0];
+        //     const fmtCOP = (v, dec = 2) =>
+        //       new Intl.NumberFormat("es-CO", {
+        //         style: "currency",
+        //         currency: "COP",
+        //         minimumFractionDigits: dec,
+        //         maximumFractionDigits: dec,
+        //       }).format(parseFloat(v) || 0);
 
-            document.getElementById("tasaInicioUSD").textContent = fmtCOP(
-              t.usd,
-              2,
-            );
-            document.getElementById("tasaInicioEUR").textContent = fmtCOP(
-              t.eur,
-              2,
-            );
-            document.getElementById("tasaInicioVEF").textContent = fmtCOP(
-              t.vef,
-              4,
-            );
-            document.getElementById("tasaInicioFecha").textContent =
-              `Tasas vigentes al ${t.fecha}`;
-          }
-        } catch (e) {
-          console.warn(
-            "No se pudieron cargar las tasas en bienvenida:",
-            e.message,
-          );
-        }
+        //     document.getElementById("tasaInicioUSD").textContent = fmtCOP(
+        //       t.usd,
+        //       2,
+        //     );
+        //     document.getElementById("tasaInicioEUR").textContent = fmtCOP(
+        //       t.eur,
+        //       2,
+        //     );
+        //     document.getElementById("tasaInicioVEF").textContent = fmtCOP(
+        //       t.vef,
+        //       4,
+        //     );
+        //     document.getElementById("tasaInicioFecha").textContent =
+        //       `Tasas vigentes al ${t.fecha}`;
+        //   }
+        // } catch (e) {
+        //   console.warn(
+        //     "No se pudieron cargar las tasas en bienvenida:",
+        //     e.message,
+        //   );
+        // }
         // 2. Consultar fecha/hora del último commit en GitHub (rlatouche/finanzas-web)
         try {
           const resRepo = await fetch(

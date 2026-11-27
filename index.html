@@ -1445,6 +1445,11 @@ if (inpFechaCorte && !inpFechaCorte.value) {
       import { obtenerDatosGastosWeb } from "./js/gastos.js";
       import { obtenerExtractoCuentaWeb } from './js/extracto.js';
       import { supabase } from './js/supabaseClient.js';
+      import {
+  obtenerMonedasWeb,
+  guardarMonedaWeb,
+  cambiarEstadoMonedaWeb
+} from './js/monedas.js';
       
       const session = await verificarSesion();
       if (!session) throw new Error("Sin sesión");

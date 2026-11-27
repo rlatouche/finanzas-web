@@ -74,27 +74,29 @@
         border-radius: 12px;
       }
       @media print {
-  .navbar, .no-print {
-    display: none !important;
-  }
-  body {
-    background: #fff !important;
-    font-size: 11px !important;
-  }
-  .container, .container-fluid {
-    max-width: 100% !important;
-    width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  .card {
-    box-shadow: none !important;
-    border: 1px solid #dee2e6 !important;
-  }
-  tr {
-    break-inside: avoid;
-  }
-}
+        .navbar,
+        .no-print {
+          display: none !important;
+        }
+        body {
+          background: #fff !important;
+          font-size: 11px !important;
+        }
+        .container,
+        .container-fluid {
+          max-width: 100% !important;
+          width: 100% !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        .card {
+          box-shadow: none !important;
+          border: 1px solid #dee2e6 !important;
+        }
+        tr {
+          break-inside: avoid;
+        }
+      }
     </style>
   </head>
   <body>
@@ -133,7 +135,9 @@
                 >Configuración</a
               >
             </li>
-            <li class="nav-item"><a class="nav-link" href="#" data-vista="extracto">Extracto</a></li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" data-vista="extracto">Extracto</a>
+            </li>
           </ul>
           <div class="d-flex align-items-center gap-3">
             <span id="usuarioEmail" class="text-white-50 small"></span>
@@ -146,88 +150,158 @@
     </nav>
 
     <main class="container pb-5">
-
       <!-- =================================================================== -->
-<!-- VISTA 0: BIENVENIDA / INICIO                                        -->
-<!-- =================================================================== -->
-<section id="vista-inicio">
-  <div class="card shadow-sm border-0 p-4 p-md-5 text-center bg-white">
-    <div class="mb-3">
-      <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-semibold" id="bienvenidaFecha">
-        Hoy
-      </span>
-    </div>
-    <h2 class="fw-bold text-dark mb-2">Bienvenido a Finanzas Personales</h2>
-    <p class="text-muted mx-auto mb-4" style="max-width: 520px;">
-      Sistema de control financiero personal y gestión multimoneda. Selecciona una opción en la barra superior para consultar saldos, registrar movimientos o generar reportes.
-    </p>
+      <!-- VISTA 0: BIENVENIDA / INICIO                                        -->
+      <!-- =================================================================== -->
+      <section id="vista-inicio">
+        <div class="card shadow-sm border-0 p-4 p-md-5 text-center bg-white">
+          <div class="mb-3">
+            <span
+              class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-semibold"
+              id="bienvenidaFecha"
+            >
+              Hoy
+            </span>
+          </div>
+          <h2 class="fw-bold text-dark mb-2">
+            Bienvenido a Finanzas Personales
+          </h2>
+          <p class="text-muted mx-auto mb-4" style="max-width: 520px">
+            Sistema de control financiero personal y gestión multimoneda.
+            Selecciona una opción en la barra superior para consultar saldos,
+            registrar movimientos o generar reportes.
+          </p>
 
-<!-- Referencia rápida de Tasas de Cambio del día -->
-<!-- Referencia rápida de Tasas de Cambio del día -->
-    <div class="row g-2 justify-content-center mx-auto" style="max-width: 780px;">
-      <div class="col-12 col-sm-4">
-        <div class="px-2 py-3 px-sm-3 rounded bg-light border h-100 d-flex flex-column justify-content-center">
-          <div class="small fw-bold text-muted text-nowrap">USD → COP</div>
-          <div class="fw-bold text-primary fs-6 text-nowrap" id="tasaInicioUSD">—</div>
+          <!-- Referencia rápida de Tasas de Cambio del día -->
+          <!-- Referencia rápida de Tasas de Cambio del día -->
+          <div
+            class="row g-2 justify-content-center mx-auto"
+            style="max-width: 780px"
+          >
+            <div class="col-12 col-sm-4">
+              <div
+                class="px-2 py-3 px-sm-3 rounded bg-light border h-100 d-flex flex-column justify-content-center"
+              >
+                <div class="small fw-bold text-muted text-nowrap">
+                  USD → COP
+                </div>
+                <div
+                  class="fw-bold text-primary fs-6 text-nowrap"
+                  id="tasaInicioUSD"
+                >
+                  —
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-sm-4">
+              <div
+                class="px-2 py-3 px-sm-3 rounded bg-light border h-100 d-flex flex-column justify-content-center"
+              >
+                <div class="small fw-bold text-muted text-nowrap">
+                  EUR → COP
+                </div>
+                <div
+                  class="fw-bold text-primary fs-6 text-nowrap"
+                  id="tasaInicioEUR"
+                >
+                  —
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-sm-4">
+              <div
+                class="px-2 py-3 px-sm-3 rounded bg-light border h-100 d-flex flex-column justify-content-center"
+              >
+                <div class="small fw-bold text-muted text-nowrap">
+                  VEF → COP
+                </div>
+                <div
+                  class="fw-bold text-primary fs-6 text-nowrap"
+                  id="tasaInicioVEF"
+                >
+                  —
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="text-muted mt-2"
+            style="font-size: 0.75rem"
+            id="tasaInicioFecha"
+          ></div>
+          <div
+            class="text-muted mt-1"
+            style="font-size: 0.75rem"
+            id="repoUltimaActualizacion"
+          ></div>
         </div>
-      </div>
-      <div class="col-12 col-sm-4">
-        <div class="px-2 py-3 px-sm-3 rounded bg-light border h-100 d-flex flex-column justify-content-center">
-          <div class="small fw-bold text-muted text-nowrap">EUR → COP</div>
-          <div class="fw-bold text-primary fs-6 text-nowrap" id="tasaInicioEUR">—</div>
+      </section>
+      <!-- =================================================================== -->
+      <!-- VISTA 1: SALDOS POR CUENTA                                          -->
+      <!-- =================================================================== -->
+      <section id="vista-saldos" class="d-none">
+        <!-- Panel de Filtros (Fecha Corte, Moneda, Institución y Tipo) -->
+        <div class="card p-3 mb-3 shadow-sm border-0">
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label
+                class="form-label small fw-bold text-muted text-uppercase mb-1"
+                >Fecha Corte:</label
+              >
+              <input
+                type="date"
+                id="saldosFechaCorte"
+                class="form-control form-control-sm"
+              />
+            </div>
+            <div class="col-md-6">
+              <label
+                class="form-label small fw-bold text-muted text-uppercase mb-1"
+                >Moneda:</label
+              >
+              <select
+                id="saldosFiltroMoneda"
+                class="form-select form-select-sm"
+              >
+                <option value="">Todas</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <select
+                id="saldosFiltroInstitucion"
+                class="form-select form-select-sm"
+              >
+                <option value="">Institución: Todas</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <select id="saldosFiltroTipo" class="form-select form-select-sm">
+                <option value="">Tipo: Todos</option>
+              </select>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="col-12 col-sm-4">
-        <div class="px-2 py-3 px-sm-3 rounded bg-light border h-100 d-flex flex-column justify-content-center">
-          <div class="small fw-bold text-muted text-nowrap">VEF → COP</div>
-          <div class="fw-bold text-primary fs-6 text-nowrap" id="tasaInicioVEF">—</div>
-        </div>
-      </div>
-    </div>
-    <div class="text-muted mt-2" style="font-size: 0.75rem;" id="tasaInicioFecha"></div>
-    <div class="text-muted mt-1" style="font-size: 0.75rem;" id="repoUltimaActualizacion"></div>
-  </div>
-</section>
-<!-- =================================================================== -->
-<!-- VISTA 1: SALDOS POR CUENTA                                          -->
-<!-- =================================================================== -->
-<section id="vista-saldos" class='d-none'>
-  <!-- Panel de Filtros (Fecha Corte, Moneda, Institución y Tipo) -->
-  <div class="card p-3 mb-3 shadow-sm border-0">
-    <div class="row g-2">
-      <div class="col-md-6">
-        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Fecha Corte:</label>
-        <input type="date" id="saldosFechaCorte" class="form-control form-control-sm" />
-      </div>
-      <div class="col-md-6">
-        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Moneda:</label>
-        <select id="saldosFiltroMoneda" class="form-select form-select-sm">
-          <option value="">Todas</option>
-        </select>
-      </div>
-      <div class="col-md-6">
-        <select id="saldosFiltroInstitucion" class="form-select form-select-sm">
-          <option value="">Institución: Todas</option>
-        </select>
-      </div>
-      <div class="col-md-6">
-        <select id="saldosFiltroTipo" class="form-select form-select-sm">
-          <option value="">Tipo: Todos</option>
-        </select>
-      </div>
-    </div>
-  </div>
 
-  <!-- Tarjeta Total Filtrado (en COP) -->
-  <div class="card p-3 mb-3 shadow-sm border border-primary bg-primary-subtle text-center">
-    <div class="small fw-bold text-primary text-uppercase">TOTAL FILTRADO</div>
-    <div id="saldosTotalFiltrado" class="fs-2 fw-bold text-primary">$ 0</div>
-    <div id="saldosInfoTasas" class="text-muted" style="font-size: 0.75rem;"></div>
-  </div>
+        <!-- Tarjeta Total Filtrado (en COP) -->
+        <div
+          class="card p-3 mb-3 shadow-sm border border-primary bg-primary-subtle text-center"
+        >
+          <div class="small fw-bold text-primary text-uppercase">
+            TOTAL FILTRADO
+          </div>
+          <div id="saldosTotalFiltrado" class="fs-2 fw-bold text-primary">
+            $ 0
+          </div>
+          <div
+            id="saldosInfoTasas"
+            class="text-muted"
+            style="font-size: 0.75rem"
+          ></div>
+        </div>
 
-  <!-- Lista de Cuentas Filtradas -->
-  <div id="listaSaldos" class="d-flex flex-column gap-2"></div>
-</section>
+        <!-- Lista de Cuentas Filtradas -->
+        <div id="listaSaldos" class="d-flex flex-column gap-2"></div>
+      </section>
 
       <!-- =================================================================== -->
       <!-- VISTA 2: REGISTRAR / EDITAR MOVIMIENTO                              -->
@@ -795,7 +869,7 @@
               🏷️ Categorías
             </button>
           </li>
-                <li class="nav-item">
+          <li class="nav-item">
             <button
               class="nav-link fw-semibold"
               data-tabcfg="monedas"
@@ -882,114 +956,149 @@
           </div>
         </div>
 
-<!-- GESTOR DE MONEDAS -->
-<div id="cfg-monedas" class="card p-3 shadow-sm border-0 d-none">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h6 class="fw-bold text-primary mb-0">💱 Gestión de Monedas</h6>
-    <button type="button" id="btnNuevaMonedaReset" class="btn btn-outline-secondary btn-sm d-none">
-      Cancelar Edición
-    </button>
-  </div>
+        <!-- GESTOR DE MONEDAS -->
+        <div id="cfg-monedas" class="card p-3 shadow-sm border-0 d-none">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold text-primary mb-0">💱 Gestión de Monedas</h6>
+            <button
+              type="button"
+              id="btnNuevaMonedaReset"
+              class="btn btn-outline-secondary btn-sm d-none"
+            >
+              Cancelar Edición
+            </button>
+          </div>
 
-  <div id="alertaMonedas" class="alert d-none py-2 small" role="alert"></div>
+          <div
+            id="alertaMonedas"
+            class="alert d-none py-2 small"
+            role="alert"
+          ></div>
 
-  <!-- Formulario Crear / Editar Moneda -->
-  <form id="formMoneda" class="row g-2 align-items-end mb-3 pb-3 border-bottom">
-    <input type="hidden" id="monModoEdicion" value="0" />
+          <!-- Formulario Crear / Editar Moneda -->
+          <form
+            id="formMoneda"
+            class="row g-2 align-items-end mb-3 pb-3 border-bottom"
+          >
+            <input type="hidden" id="monModoEdicion" value="0" />
 
-    <div class="col-6 col-md-2">
-      <label class="form-label small fw-bold text-muted mb-1">Código ISO *</label>
-      <input
-        type="text"
-        id="monCodigo"
-        class="form-control form-control-sm text-uppercase"
-        placeholder="Ej: CAD"
-        maxlength="10"
-        required
-      />
-    </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label small fw-bold text-muted mb-1"
+                >Código ISO *</label
+              >
+              <input
+                type="text"
+                id="monCodigo"
+                class="form-control form-control-sm text-uppercase"
+                placeholder="Ej: CAD"
+                maxlength="10"
+                required
+              />
+            </div>
 
-    <div class="col-6 col-md-4">
-      <label class="form-label small fw-bold text-muted mb-1">Nombre *</label>
-      <input
-        type="text"
-        id="monNombre"
-        class="form-control form-control-sm"
-        placeholder="Ej: Dólar Canadiense"
-        required
-      />
-    </div>
+            <div class="col-6 col-md-4">
+              <label class="form-label small fw-bold text-muted mb-1"
+                >Nombre *</label
+              >
+              <input
+                type="text"
+                id="monNombre"
+                class="form-control form-control-sm"
+                placeholder="Ej: Dólar Canadiense"
+                required
+              />
+            </div>
 
-    <div class="col-4 col-md-2">
-      <label class="form-label small fw-bold text-muted mb-1">Símbolo</label>
-      <input
-        type="text"
-        id="monSimbolo"
-        class="form-control form-control-sm"
-        placeholder="$"
-        value="$"
-        maxlength="6"
-        required
-      />
-    </div>
+            <div class="col-4 col-md-2">
+              <label class="form-label small fw-bold text-muted mb-1"
+                >Símbolo</label
+              >
+              <input
+                type="text"
+                id="monSimbolo"
+                class="form-control form-control-sm"
+                placeholder="$"
+                value="$"
+                maxlength="6"
+                required
+              />
+            </div>
 
-    <div class="col-4 col-md-2">
-      <label class="form-label small fw-bold text-muted mb-1">Decimales</label>
-      <input
-        type="number"
-        id="monDecimales"
-        class="form-control form-control-sm"
-        min="0"
-        max="6"
-        value="2"
-        required
-      />
-    </div>
+            <div class="col-4 col-md-2">
+              <label class="form-label small fw-bold text-muted mb-1"
+                >Decimales</label
+              >
+              <input
+                type="number"
+                id="monDecimales"
+                class="form-control form-control-sm"
+                min="0"
+                max="6"
+                value="2"
+                required
+              />
+            </div>
 
-    <div class="col-4 col-md-2">
-      <button type="submit" id="btnGuardarMoneda" class="btn btn-primary btn-sm w-100 fw-bold">
-        Agregar
-      </button>
-    </div>
+            <div class="col-4 col-md-2">
+              <button
+                type="submit"
+                id="btnGuardarMoneda"
+                class="btn btn-primary btn-sm w-100 fw-bold"
+              >
+                Agregar
+              </button>
+            </div>
 
-    <div class="col-12 mt-2 d-flex flex-wrap gap-4">
-      <div class="form-check">
-        <input class="form-check-input" type="checkbox" id="monMostrarInicio" checked />
-        <label class="form-check-label small" for="monMostrarInicio">
-          Mostrar tasa en pantalla de Inicio
-        </label>
-      </div>
-      <div class="form-check" id="boxMonActiva">
-        <input class="form-check-input" type="checkbox" id="monActiva" checked />
-        <label class="form-check-label small" for="monActiva">
-          Moneda activa para nuevas cuentas/movimientos
-        </label>
-      </div>
-    </div>
-  </form>
+            <div class="col-12 mt-2 d-flex flex-wrap gap-4">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="monMostrarInicio"
+                  checked
+                />
+                <label class="form-check-label small" for="monMostrarInicio">
+                  Mostrar tasa en pantalla de Inicio
+                </label>
+              </div>
+              <div class="form-check" id="boxMonActiva">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="monActiva"
+                  checked
+                />
+                <label class="form-check-label small" for="monActiva">
+                  Moneda activa para nuevas cuentas/movimientos
+                </label>
+              </div>
+            </div>
+          </form>
 
-  <!-- Tabla de Monedas Registradas -->
-  <div class="table-responsive">
-    <table class="table table-sm table-hover align-middle mb-0">
-      <thead class="table-light">
-        <tr>
-          <th>Código</th>
-          <th>Nombre</th>
-          <th class="text-center">Símbolo</th>
-          <th class="text-center">Decimales</th>
-          <th class="text-center">En Inicio</th>
-          <th class="text-center">Estado</th>
-          <th class="text-end">Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="tbodyConfigMonedas">
-        <tr>
-          <td colspan="7" class="text-center text-muted py-3">Cargando monedas...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+          <!-- Tabla de Monedas Registradas -->
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Código</th>
+                  <th>Nombre</th>
+                  <th class="text-center">Símbolo</th>
+                  <th class="text-center">Decimales</th>
+                  <th class="text-center">En Inicio</th>
+                  <th class="text-center">Estado</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyConfigMonedas">
+                <tr>
+                  <td colspan="7" class="text-center text-muted py-3">
+                    Cargando monedas...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <!-- MODAL: CREAR / EDITAR CUENTA -->
@@ -1291,119 +1400,164 @@
           </div>
         </div>
       </section>
-     <!-- =================================================================== -->
-    <!-- VISTA 6: EXTRACTO DE CUENTA (IMPRIMIBLE)                            -->
-    <!-- =================================================================== -->
-    <section id="vista-extracto" class="d-none">
-      <!-- Barra de filtros (se oculta automáticamente al imprimir) -->
-      <div class="card p-3 mb-3 shadow-sm border-0 no-print">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h5 class="fw-bold text-dark mb-0">Extracto de Cuenta</h5>
-          <button type="button" id="btnImprimirExtracto" class="btn btn-outline-secondary btn-sm fw-bold" disabled>
-            🖨️ Imprimir / PDF
-          </button>
-        </div>
-
-        <form id="formFiltroExtracto" class="row g-2 align-items-end">
-          <div class="col-md-5">
-            <label class="form-label small fw-bold text-muted">Cuenta *</label>
-            <select id="extCuenta" class="form-select form-select-sm" required>
-              <option value="">-- Selecciona una cuenta --</option>
-            </select>
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label small fw-bold text-muted">Fecha Inicio *</label>
-            <input type="date" id="extDesde" class="form-control form-control-sm" required>
-          </div>
-          <div class="col-6 col-md-2">
-            <label class="form-label small fw-bold text-muted">Fecha Final *</label>
-            <input type="date" id="extHasta" class="form-control form-control-sm" required>
-          </div>
-          <div class="col-12 col-md-2">
-            <button type="submit" id="btnGenerarExtracto" class="btn btn-primary btn-sm w-100 fw-bold">
-              Generar
+      <!-- =================================================================== -->
+      <!-- VISTA 6: EXTRACTO DE CUENTA (IMPRIMIBLE)                            -->
+      <!-- =================================================================== -->
+      <section id="vista-extracto" class="d-none">
+        <!-- Barra de filtros (se oculta automáticamente al imprimir) -->
+        <div class="card p-3 mb-3 shadow-sm border-0 no-print">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="fw-bold text-dark mb-0">Extracto de Cuenta</h5>
+            <button
+              type="button"
+              id="btnImprimirExtracto"
+              class="btn btn-outline-secondary btn-sm fw-bold"
+              disabled
+            >
+              🖨️ Imprimir / PDF
             </button>
           </div>
-        </form>
-      </div>
 
-      <!-- Área del Documento Imprimible -->
-      <div id="contenedorDocumentoExtracto" class="card p-4 shadow-sm border-0 d-none">
-        <!-- Encabezado del Extracto -->
-        <div class="border-bottom pb-3 mb-3 d-flex justify-content-between align-items-start">
-          <div>
-            <h4 class="fw-bold text-primary mb-1" id="extDocTituloCuenta">Estado de Cuenta</h4>
-            <div class="text-muted small" id="extDocSubtitulo">Institución • Tipo • Moneda</div>
-          </div>
-          <div class="text-end">
-            <div class="fw-bold small text-uppercase text-muted">Periodo Consultado</div>
-            <div class="fw-semibold" id="extDocPeriodo">YYYY-MM-DD al YYYY-MM-DD</div>
-            <div class="text-muted" style="font-size: 0.75rem;" id="extDocFechaEmision"></div>
-          </div>
+          <form id="formFiltroExtracto" class="row g-2 align-items-end">
+            <div class="col-md-5">
+              <label class="form-label small fw-bold text-muted"
+                >Cuenta *</label
+              >
+              <select
+                id="extCuenta"
+                class="form-select form-select-sm"
+                required
+              >
+                <option value="">-- Selecciona una cuenta --</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label small fw-bold text-muted"
+                >Fecha Inicio *</label
+              >
+              <input
+                type="date"
+                id="extDesde"
+                class="form-control form-control-sm"
+                required
+              />
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label small fw-bold text-muted"
+                >Fecha Final *</label
+              >
+              <input
+                type="date"
+                id="extHasta"
+                class="form-control form-control-sm"
+                required
+              />
+            </div>
+            <div class="col-12 col-md-2">
+              <button
+                type="submit"
+                id="btnGenerarExtracto"
+                class="btn btn-primary btn-sm w-100 fw-bold"
+              >
+                Generar
+              </button>
+            </div>
+          </form>
         </div>
 
-        <!-- Resumen de Totales -->
-        <div class="row g-2 mb-3 text-center">
-          <div class="col-6 col-md-3">
-            <div class="p-2 rounded bg-light border">
-              <div class="small text-muted fw-bold">SALDO INICIAL</div>
-              <div class="fw-bold text-dark" id="extResInicial">$ 0</div>
+        <!-- Área del Documento Imprimible -->
+        <div
+          id="contenedorDocumentoExtracto"
+          class="card p-4 shadow-sm border-0 d-none"
+        >
+          <!-- Encabezado del Extracto -->
+          <div
+            class="border-bottom pb-3 mb-3 d-flex justify-content-between align-items-start"
+          >
+            <div>
+              <h4 class="fw-bold text-primary mb-1" id="extDocTituloCuenta">
+                Estado de Cuenta
+              </h4>
+              <div class="text-muted small" id="extDocSubtitulo">
+                Institución • Tipo • Moneda
+              </div>
+            </div>
+            <div class="text-end">
+              <div class="fw-bold small text-uppercase text-muted">
+                Periodo Consultado
+              </div>
+              <div class="fw-semibold" id="extDocPeriodo">
+                YYYY-MM-DD al YYYY-MM-DD
+              </div>
+              <div
+                class="text-muted"
+                style="font-size: 0.75rem"
+                id="extDocFechaEmision"
+              ></div>
             </div>
           </div>
-          <div class="col-6 col-md-3">
-            <div class="p-2 rounded bg-light border">
-              <div class="small text-muted fw-bold">TOTAL INGRESOS</div>
-              <div class="fw-bold text-success" id="extResIngresos">$ 0</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="p-2 rounded bg-light border">
-              <div class="small text-muted fw-bold">TOTAL EGRESOS</div>
-              <div class="fw-bold text-danger" id="extResEgresos">$ 0</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="p-2 rounded bg-primary-subtle border border-primary">
-              <div class="small text-primary fw-bold">SALDO FINAL</div>
-              <div class="fw-bold text-primary" id="extResFinal">$ 0</div>
-            </div>
-          </div>
-        </div>
 
-        <!-- Tabla Cronológica con Saldo Acumulado -->
-        <div class="table-responsive">
-          <table class="table table-sm table-bordered align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th style="width: 95px;">Fecha</th>
-                <th>Beneficiario / Concepto</th>
-                <th>Categoría</th>
-                <th class="text-end" style="width: 130px;">Movimiento</th>
-                <th class="text-end" style="width: 140px;">Saldo Acumulado</th>
-              </tr>
-            </thead>
-            <tbody id="tbodyExtracto"></tbody>
-          </table>
+          <!-- Resumen de Totales -->
+          <div class="row g-2 mb-3 text-center">
+            <div class="col-6 col-md-3">
+              <div class="p-2 rounded bg-light border">
+                <div class="small text-muted fw-bold">SALDO INICIAL</div>
+                <div class="fw-bold text-dark" id="extResInicial">$ 0</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-2 rounded bg-light border">
+                <div class="small text-muted fw-bold">TOTAL INGRESOS</div>
+                <div class="fw-bold text-success" id="extResIngresos">$ 0</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-2 rounded bg-light border">
+                <div class="small text-muted fw-bold">TOTAL EGRESOS</div>
+                <div class="fw-bold text-danger" id="extResEgresos">$ 0</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="p-2 rounded bg-primary-subtle border border-primary">
+                <div class="small text-primary fw-bold">SALDO FINAL</div>
+                <div class="fw-bold text-primary" id="extResFinal">$ 0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabla Cronológica con Saldo Acumulado -->
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 95px">Fecha</th>
+                  <th>Beneficiario / Concepto</th>
+                  <th>Categoría</th>
+                  <th class="text-end" style="width: 130px">Movimiento</th>
+                  <th class="text-end" style="width: 140px">Saldo Acumulado</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyExtracto"></tbody>
+            </table>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module">
-
       const ahoraLocal = new Date();
-const anioActual = ahoraLocal.getFullYear();
-const mesActual = String(ahoraLocal.getMonth() + 1).padStart(2, '0');
-const diaActual = String(ahoraLocal.getDate()).padStart(2, '0');
+      const anioActual = ahoraLocal.getFullYear();
+      const mesActual = String(ahoraLocal.getMonth() + 1).padStart(2, "0");
+      const diaActual = String(ahoraLocal.getDate()).padStart(2, "0");
 
-const hoyISO = `${anioActual}-${mesActual}-${diaActual}`;
-      
-const primerDiaMesISO = `${anioActual}-${mesActual}-01`;
-      const inpFechaCorte = document.getElementById('saldosFechaCorte');
-if (inpFechaCorte && !inpFechaCorte.value) {
-  inpFechaCorte.value = hoyISO;
-}
+      const hoyISO = `${anioActual}-${mesActual}-${diaActual}`;
+
+      const primerDiaMesISO = `${anioActual}-${mesActual}-01`;
+      const inpFechaCorte = document.getElementById("saldosFechaCorte");
+      if (inpFechaCorte && !inpFechaCorte.value) {
+        inpFechaCorte.value = hoyISO;
+      }
 
       let catalogos = null;
       let idEnEdicion = null;
@@ -1443,19 +1597,19 @@ if (inpFechaCorte && !inpFechaCorte.value) {
         actualizarSubcategoriaMasivoWeb,
       } from "./js/configuracion.js";
       import { obtenerDatosGastosWeb } from "./js/gastos.js";
-      import { obtenerExtractoCuentaWeb } from './js/extracto.js';
-      import { supabase } from './js/supabaseClient.js';
+      import { obtenerExtractoCuentaWeb } from "./js/extracto.js";
+      import { supabase } from "./js/supabaseClient.js";
       import {
-  obtenerMonedasWeb,
-  guardarMonedaWeb,
-  cambiarEstadoMonedaWeb
-} from './js/monedas.js';
-      
+        obtenerMonedasWeb,
+        guardarMonedaWeb,
+        cambiarEstadoMonedaWeb,
+      } from "./js/monedas.js";
+
       const session = await verificarSesion();
       if (!session) throw new Error("Sin sesión");
 
       document.getElementById("usuarioEmail").textContent = session.user.email;
-      activarVista('inicio');
+      activarVista("inicio");
       document
         .getElementById("btnSalir")
         .addEventListener("click", cerrarSesion);
@@ -1472,86 +1626,136 @@ if (inpFechaCorte && !inpFechaCorte.value) {
       //   .toISOString()
       //   .split("T")[0];
 
-      
       // --- NAVEGACIÓN ENTRE VISTAS ---
-async function activarVista(vista) {
-  document.querySelectorAll('[data-vista]').forEach(l => l.classList.toggle('active', l.dataset.vista === vista));
-  document.getElementById('vista-inicio').classList.toggle('d-none', vista !== 'inicio');
-  document.getElementById('vista-saldos').classList.toggle('d-none', vista !== 'saldos');
-  document.getElementById('vista-registrar').classList.toggle('d-none', vista !== 'registrar');
-  document.getElementById('vista-historial').classList.toggle('d-none', vista !== 'historial');
-  document.getElementById('vista-gastos').classList.toggle('d-none', vista !== 'gastos');
-  document.getElementById('vista-configuracion').classList.toggle('d-none', vista !== 'configuracion');
-  document.getElementById('vista-extracto').classList.toggle('d-none', vista !== 'extracto');
+      async function activarVista(vista) {
+        document
+          .querySelectorAll("[data-vista]")
+          .forEach((l) =>
+            l.classList.toggle("active", l.dataset.vista === vista),
+          );
+        document
+          .getElementById("vista-inicio")
+          .classList.toggle("d-none", vista !== "inicio");
+        document
+          .getElementById("vista-saldos")
+          .classList.toggle("d-none", vista !== "saldos");
+        document
+          .getElementById("vista-registrar")
+          .classList.toggle("d-none", vista !== "registrar");
+        document
+          .getElementById("vista-historial")
+          .classList.toggle("d-none", vista !== "historial");
+        document
+          .getElementById("vista-gastos")
+          .classList.toggle("d-none", vista !== "gastos");
+        document
+          .getElementById("vista-configuracion")
+          .classList.toggle("d-none", vista !== "configuracion");
+        document
+          .getElementById("vista-extracto")
+          .classList.toggle("d-none", vista !== "extracto");
 
-  if (!catalogos && (vista === 'registrar' || vista === 'historial' || vista === 'extracto')) {
-    await inicializarCatalogosYFormularios();
-  }
-  if (vista === 'inicio') await cargarBienvenida();
-  if (vista === 'saldos') cargarSaldos();
-  if (vista === 'gastos') await inicializarGastos();
-  if (vista === 'configuracion') await inicializarConfiguracion();
-  if (vista === 'extracto') inicializarExtracto();
-}
-async function cargarBienvenida() {
-  const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  const textoFecha = new Date().toLocaleDateString('es-CO', opcionesFecha);
-  document.getElementById('bienvenidaFecha').textContent =
-    textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1);
-
-  // 1. Consultar tasas vigentes en Supabase
-
-  try {
-    const { data, error } = await supabase
-      .from('tasas_cambio')
-      .select('fecha, usd, eur, vef')
-      .order('fecha', { ascending: false })
-      .limit(1);
-
-    if (!error && data && data.length > 0) {
-      const t = data[0];
-      const fmtCOP = (v, dec = 2) =>
-        new Intl.NumberFormat('es-CO', {
-          style: 'currency',
-          currency: 'COP',
-          minimumFractionDigits: dec,
-          maximumFractionDigits: dec
-        }).format(parseFloat(v) || 0);
-
-      document.getElementById('tasaInicioUSD').textContent = fmtCOP(t.usd, 2);
-      document.getElementById('tasaInicioEUR').textContent = fmtCOP(t.eur, 2);
-      document.getElementById('tasaInicioVEF').textContent = fmtCOP(t.vef, 4);
-      document.getElementById('tasaInicioFecha').textContent = `Tasas vigentes al ${t.fecha}`;
-    }
-  } catch (e) {
-    console.warn('No se pudieron cargar las tasas en bienvenida:', e.message);
-  }
-  // 2. Consultar fecha/hora del último commit en GitHub (rlatouche/finanzas-web)
-  try {
-    const resRepo = await fetch('https://api.github.com/repos/rlatouche/finanzas-web/commits/main', {
-      headers: { Accept: 'application/vnd.github.v3+json' }
-    });
-    if (resRepo.ok) {
-      const commitData = await resRepo.json();
-      const fechaISO = commitData?.commit?.committer?.date || commitData?.commit?.author?.date;
-      if (fechaISO) {
-        const fechaLocal = new Date(fechaISO).toLocaleString('es-CO', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        });
-        document.getElementById('repoUltimaActualizacion').textContent =
-          `Última actualización del sistema: ${fechaLocal}`;
+        if (
+          !catalogos &&
+          (vista === "registrar" ||
+            vista === "historial" ||
+            vista === "extracto")
+        ) {
+          await inicializarCatalogosYFormularios();
+        }
+        if (vista === "inicio") await cargarBienvenida();
+        if (vista === "saldos") cargarSaldos();
+        if (vista === "gastos") await inicializarGastos();
+        if (vista === "configuracion") await inicializarConfiguracion();
+        if (vista === "extracto") inicializarExtracto();
       }
-    }
-  } catch (e) {
-    console.warn('No se pudo consultar la última actualización en GitHub:', e.message);
-  }
-  
-}
+      async function cargarBienvenida() {
+        const opcionesFecha = {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        };
+        const textoFecha = new Date().toLocaleDateString(
+          "es-CO",
+          opcionesFecha,
+        );
+        document.getElementById("bienvenidaFecha").textContent =
+          textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1);
+
+        // 1. Consultar tasas vigentes en Supabase
+
+        try {
+          const { data, error } = await supabase
+            .from("tasas_cambio")
+            .select("fecha, usd, eur, vef")
+            .order("fecha", { ascending: false })
+            .limit(1);
+
+          if (!error && data && data.length > 0) {
+            const t = data[0];
+            const fmtCOP = (v, dec = 2) =>
+              new Intl.NumberFormat("es-CO", {
+                style: "currency",
+                currency: "COP",
+                minimumFractionDigits: dec,
+                maximumFractionDigits: dec,
+              }).format(parseFloat(v) || 0);
+
+            document.getElementById("tasaInicioUSD").textContent = fmtCOP(
+              t.usd,
+              2,
+            );
+            document.getElementById("tasaInicioEUR").textContent = fmtCOP(
+              t.eur,
+              2,
+            );
+            document.getElementById("tasaInicioVEF").textContent = fmtCOP(
+              t.vef,
+              4,
+            );
+            document.getElementById("tasaInicioFecha").textContent =
+              `Tasas vigentes al ${t.fecha}`;
+          }
+        } catch (e) {
+          console.warn(
+            "No se pudieron cargar las tasas en bienvenida:",
+            e.message,
+          );
+        }
+        // 2. Consultar fecha/hora del último commit en GitHub (rlatouche/finanzas-web)
+        try {
+          const resRepo = await fetch(
+            "https://api.github.com/repos/rlatouche/finanzas-web/commits/main",
+            {
+              headers: { Accept: "application/vnd.github.v3+json" },
+            },
+          );
+          if (resRepo.ok) {
+            const commitData = await resRepo.json();
+            const fechaISO =
+              commitData?.commit?.committer?.date ||
+              commitData?.commit?.author?.date;
+            if (fechaISO) {
+              const fechaLocal = new Date(fechaISO).toLocaleString("es-CO", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              });
+              document.getElementById("repoUltimaActualizacion").textContent =
+                `Última actualización del sistema: ${fechaLocal}`;
+            }
+          }
+        } catch (e) {
+          console.warn(
+            "No se pudo consultar la última actualización en GitHub:",
+            e.message,
+          );
+        }
+      }
       document.querySelectorAll("[data-vista]").forEach((link) => {
         link.addEventListener("click", (e) => {
           e.preventDefault();
@@ -1570,94 +1774,114 @@ async function cargarBienvenida() {
         if (moneda === "COP") return fmtCOP.format(num);
         return `${moneda} ${num.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       }
-// --- VISTA 1: SALDOS CON FILTROS ---
-let cacheSaldosActual = [];
-let tasasSaldosActual = {};
+      // --- VISTA 1: SALDOS CON FILTROS ---
+      let cacheSaldosActual = [];
+      let tasasSaldosActual = {};
 
-function formatearMonedaSaldos(valor, moneda) {
-  const cod = (moneda || 'COP').toUpperCase();
-  const decimales = cod === 'COP' ? 0 : 2;
-  const formatted = new Intl.NumberFormat('es-CO', {
-    minimumFractionDigits: decimales,
-    maximumFractionDigits: decimales
-  }).format(valor);
-  return cod === 'COP' ? `$ ${formatted}` : `${cod} ${formatted}`;
-}
+      function formatearMonedaSaldos(valor, moneda) {
+        const cod = (moneda || "COP").toUpperCase();
+        const decimales = cod === "COP" ? 0 : 2;
+        const formatted = new Intl.NumberFormat("es-CO", {
+          minimumFractionDigits: decimales,
+          maximumFractionDigits: decimales,
+        }).format(valor);
+        return cod === "COP" ? `$ ${formatted}` : `${cod} ${formatted}`;
+      }
 
-function poblarSelectoresSaldos(cuentas) {
-  const selMoneda = document.getElementById('saldosFiltroMoneda');
-  const selInst = document.getElementById('saldosFiltroInstitucion');
-  const selTipo = document.getElementById('saldosFiltroTipo');
+      function poblarSelectoresSaldos(cuentas) {
+        const selMoneda = document.getElementById("saldosFiltroMoneda");
+        const selInst = document.getElementById("saldosFiltroInstitucion");
+        const selTipo = document.getElementById("saldosFiltroTipo");
 
-  const prevMon = selMoneda.value;
-  const prevInst = selInst.value;
-  const prevTipo = selTipo.value;
+        const prevMon = selMoneda.value;
+        const prevInst = selInst.value;
+        const prevTipo = selTipo.value;
 
-  const monedas = [...new Set(cuentas.map(c => (c.moneda || c.moneda_codigo || 'COP').toUpperCase()))].sort();
-  const instituciones = [...new Set(cuentas.map(c => (c.institucion || 'Sin Institución').trim()))].sort();
-  const tipos = [...new Set(cuentas.map(c => (c.tipo_cuenta || c.tipo || 'Sin Tipo').trim()))].sort();
+        const monedas = [
+          ...new Set(
+            cuentas.map((c) =>
+              (c.moneda || c.moneda_codigo || "COP").toUpperCase(),
+            ),
+          ),
+        ].sort();
+        const instituciones = [
+          ...new Set(
+            cuentas.map((c) => (c.institucion || "Sin Institución").trim()),
+          ),
+        ].sort();
+        const tipos = [
+          ...new Set(
+            cuentas.map((c) => (c.tipo_cuenta || c.tipo || "Sin Tipo").trim()),
+          ),
+        ].sort();
 
-  selMoneda.innerHTML = '<option value="">Todas</option>';
-  monedas.forEach(m => selMoneda.add(new Option(m, m)));
+        selMoneda.innerHTML = '<option value="">Todas</option>';
+        monedas.forEach((m) => selMoneda.add(new Option(m, m)));
 
-  selInst.innerHTML = '<option value="">Institución: Todas</option>';
-  instituciones.forEach(i => selInst.add(new Option(i, i)));
+        selInst.innerHTML = '<option value="">Institución: Todas</option>';
+        instituciones.forEach((i) => selInst.add(new Option(i, i)));
 
-  selTipo.innerHTML = '<option value="">Tipo: Todos</option>';
-  tipos.forEach(t => selTipo.add(new Option(t, t)));
+        selTipo.innerHTML = '<option value="">Tipo: Todos</option>';
+        tipos.forEach((t) => selTipo.add(new Option(t, t)));
 
-  if (monedas.includes(prevMon)) selMoneda.value = prevMon;
-  if (instituciones.includes(prevInst)) selInst.value = prevInst;
-  if (tipos.includes(prevTipo)) selTipo.value = prevTipo;
-}
+        if (monedas.includes(prevMon)) selMoneda.value = prevMon;
+        if (instituciones.includes(prevInst)) selInst.value = prevInst;
+        if (tipos.includes(prevTipo)) selTipo.value = prevTipo;
+      }
 
-function renderizarSaldosFiltrados() {
-  const fMoneda = document.getElementById('saldosFiltroMoneda').value;
-  const fInst = document.getElementById('saldosFiltroInstitucion').value;
-  const fTipo = document.getElementById('saldosFiltroTipo').value;
+      function renderizarSaldosFiltrados() {
+        const fMoneda = document.getElementById("saldosFiltroMoneda").value;
+        const fInst = document.getElementById("saldosFiltroInstitucion").value;
+        const fTipo = document.getElementById("saldosFiltroTipo").value;
 
-  const filtradas = cacheSaldosActual.filter(c => {
-    const mon = (c.moneda || c.moneda_codigo || 'COP').toUpperCase();
-    const inst = (c.institucion || 'Sin Institución').trim();
-    const tipo = (c.tipo || c.tipo_cuenta || 'Sin Tipo').trim();
+        const filtradas = cacheSaldosActual.filter((c) => {
+          const mon = (c.moneda || c.moneda_codigo || "COP").toUpperCase();
+          const inst = (c.institucion || "Sin Institución").trim();
+          const tipo = (c.tipo || c.tipo_cuenta || "Sin Tipo").trim();
 
-    if (fMoneda && mon !== fMoneda) return false;
-    if (fInst && inst !== fInst) return false;
-    if (fTipo && tipo !== fTipo) return false;
-    return true;
-  });
+          if (fMoneda && mon !== fMoneda) return false;
+          if (fInst && inst !== fInst) return false;
+          if (fTipo && tipo !== fTipo) return false;
+          return true;
+        });
 
-  // Sumar el equivalente en COP de las cuentas filtradas
-  const totalCOP = filtradas.reduce((acc, c) => acc + (parseFloat(c.saldoCOP) || 0), 0);
-  document.getElementById('saldosTotalFiltrado').textContent = formatearMonedaSaldos(totalCOP, 'COP');
+        // Sumar el equivalente en COP de las cuentas filtradas
+        const totalCOP = filtradas.reduce(
+          (acc, c) => acc + (parseFloat(c.saldoCOP) || 0),
+          0,
+        );
+        document.getElementById("saldosTotalFiltrado").textContent =
+          formatearMonedaSaldos(totalCOP, "COP");
 
-  const contenedor = document.getElementById('listaSaldos');
-  if (filtradas.length === 0) {
-    contenedor.innerHTML = `
+        const contenedor = document.getElementById("listaSaldos");
+        if (filtradas.length === 0) {
+          contenedor.innerHTML = `
       <div class="text-center text-muted py-4 bg-white rounded shadow-sm">
         No hay cuentas que coincidan con los filtros seleccionados.
       </div>`;
-    return;
-  }
+          return;
+        }
 
-  contenedor.innerHTML = filtradas.map(c => {
-    const mon = (c.moneda || c.moneda_codigo || 'COP').toUpperCase();
-    const inst = c.institucion || 'Sin Institución';
-    const tipo = c.tipo || c.tipo_cuenta || '';
-    const saldoOrig = parseFloat(c.saldoOriginal ?? c.saldo) || 0;
-    const saldoCop = parseFloat(c.saldoCOP) || 0;
-    const claseColor = saldoOrig < 0 ? 'text-danger' : 'text-success';
+        contenedor.innerHTML = filtradas
+          .map((c) => {
+            const mon = (c.moneda || c.moneda_codigo || "COP").toUpperCase();
+            const inst = c.institucion || "Sin Institución";
+            const tipo = c.tipo || c.tipo_cuenta || "";
+            const saldoOrig = parseFloat(c.saldoOriginal ?? c.saldo) || 0;
+            const saldoCop = parseFloat(c.saldoCOP) || 0;
+            const claseColor = saldoOrig < 0 ? "text-danger" : "text-success";
 
-    const subLineaCOP = mon !== 'COP'
-      ? `<div class="small text-muted">≈ ${formatearMonedaSaldos(saldoCop, 'COP')}</div>`
-      : '';
+            const subLineaCOP =
+              mon !== "COP"
+                ? `<div class="small text-muted">≈ ${formatearMonedaSaldos(saldoCop, "COP")}</div>`
+                : "";
 
-    return `
+            return `
       <div class="card p-3 shadow-sm border-0">
         <div class="d-flex justify-content-between align-items-center">
           <div>
             <div class="fw-bold text-dark">${c.nombre}</div>
-            <div class="small text-muted">${inst}${tipo ? ' • ' + tipo : ''}</div>
+            <div class="small text-muted">${inst}${tipo ? " • " + tipo : ""}</div>
           </div>
           <div class="text-end">
             <div class="fw-bold fs-6 ${claseColor}">${formatearMonedaSaldos(saldoOrig, mon)}</div>
@@ -1665,36 +1889,48 @@ function renderizarSaldosFiltrados() {
           </div>
         </div>
       </div>`;
-  }).join('');
-}
+          })
+          .join("");
+      }
 
-async function cargarSaldos() {
-  const inpFecha = document.getElementById('saldosFechaCorte');
-  if (!inpFecha.value) inpFecha.value = hoyISO;
+      async function cargarSaldos() {
+        const inpFecha = document.getElementById("saldosFechaCorte");
+        if (!inpFecha.value) inpFecha.value = hoyISO;
 
-  const contenedor = document.getElementById('listaSaldos');
-  contenedor.innerHTML = '<div class="text-center text-muted py-4">Cargando saldos...</div>';
+        const contenedor = document.getElementById("listaSaldos");
+        contenedor.innerHTML =
+          '<div class="text-center text-muted py-4">Cargando saldos...</div>';
 
-  try {
-    // Ajusta el nombre de la función importada de js/cuentas.js si en tu archivo se llama distinto
-    const respuesta = await obtenerResumenSaldosWeb(inpFecha.value);
+        try {
+          // Ajusta el nombre de la función importada de js/cuentas.js si en tu archivo se llama distinto
+          const respuesta = await obtenerResumenSaldosWeb(inpFecha.value);
 
-    // Soporta tanto si devuelve { cuentas, tasas } como si devuelve directamente un array
-    cacheSaldosActual = Array.isArray(respuesta) ? respuesta : (respuesta.cuentas || []);
-    tasasSaldosActual = respuesta.tasas || {};
+          // Soporta tanto si devuelve { cuentas, tasas } como si devuelve directamente un array
+          cacheSaldosActual = Array.isArray(respuesta)
+            ? respuesta
+            : respuesta.cuentas || [];
+          tasasSaldosActual = respuesta.tasas || {};
 
-    poblarSelectoresSaldos(cacheSaldosActual);
-    renderizarSaldosFiltrados();
-  } catch (err) {
-    contenedor.innerHTML = `<div class="alert alert-danger">Error al cargar saldos: ${err.message}</div>`;
-  }
-}
+          poblarSelectoresSaldos(cacheSaldosActual);
+          renderizarSaldosFiltrados();
+        } catch (err) {
+          contenedor.innerHTML = `<div class="alert alert-danger">Error al cargar saldos: ${err.message}</div>`;
+        }
+      }
 
-// Listeners de los 4 controles de filtro
-document.getElementById('saldosFechaCorte').addEventListener('change', cargarSaldos);
-document.getElementById('saldosFiltroMoneda').addEventListener('change', renderizarSaldosFiltrados);
-document.getElementById('saldosFiltroInstitucion').addEventListener('change', renderizarSaldosFiltrados);
-document.getElementById('saldosFiltroTipo').addEventListener('change', renderizarSaldosFiltrados);
+      // Listeners de los 4 controles de filtro
+      document
+        .getElementById("saldosFechaCorte")
+        .addEventListener("change", cargarSaldos);
+      document
+        .getElementById("saldosFiltroMoneda")
+        .addEventListener("change", renderizarSaldosFiltrados);
+      document
+        .getElementById("saldosFiltroInstitucion")
+        .addEventListener("change", renderizarSaldosFiltrados);
+      document
+        .getElementById("saldosFiltroTipo")
+        .addEventListener("change", renderizarSaldosFiltrados);
       // // --- VISTA 1: SALDOS ---
       // const inputFecha = document.getElementById("fechaCorte");
       // inputFecha.value = hoyISO;
@@ -2059,7 +2295,7 @@ document.getElementById('saldosFiltroTipo').addEventListener('change', renderiza
               nota: document.getElementById("trNota").value.trim(),
             });
 
-           limpiarFormTransferencia();
+            limpiarFormTransferencia();
             salirModoEdicion();
 
             if (estabaEditando) {
@@ -2416,48 +2652,48 @@ document.getElementById('saldosFiltroTipo').addEventListener('change', renderiza
           await refrescarPlantillas();
         });
 
- function limpiarFormSimple() {
-  document.getElementById('formSimple').reset();
-  document.getElementById('txFecha').value = hoyISO;
-  document.getElementById('txTipo').value = 'Gasto';
+      function limpiarFormSimple() {
+        document.getElementById("formSimple").reset();
+        document.getElementById("txFecha").value = hoyISO;
+        document.getElementById("txTipo").value = "Gasto";
 
-  // Ocultar cajas condicionales de nuevo beneficiario, categoría, subcategoría y sugerencias
-  document.getElementById('boxSugerencias').classList.add('d-none');
-  document.getElementById('boxNuevoBen').classList.add('d-none');
-  document.getElementById('boxNuevaCat').classList.add('d-none');
-  document.getElementById('boxNuevaSub').classList.add('d-none');
+        // Ocultar cajas condicionales de nuevo beneficiario, categoría, subcategoría y sugerencias
+        document.getElementById("boxSugerencias").classList.add("d-none");
+        document.getElementById("boxNuevoBen").classList.add("d-none");
+        document.getElementById("boxNuevaCat").classList.add("d-none");
+        document.getElementById("boxNuevaSub").classList.add("d-none");
 
-  // Disparar eventos para restaurar la moneda de la cuenta por defecto y las categorías de Gasto
-  document.getElementById('txCuenta').dispatchEvent(new Event('change'));
-  document.getElementById('txTipo').dispatchEvent(new Event('change'));
-}
+        // Disparar eventos para restaurar la moneda de la cuenta por defecto y las categorías de Gasto
+        document.getElementById("txCuenta").dispatchEvent(new Event("change"));
+        document.getElementById("txTipo").dispatchEvent(new Event("change"));
+      }
 
-function limpiarFormTransferencia() {
-  document.getElementById('formTransferencia').reset();
-  document.getElementById('trFecha').value = hoyISO;
-  document.getElementById('boxMontoDestino').classList.add('d-none');
+      function limpiarFormTransferencia() {
+        document.getElementById("formTransferencia").reset();
+        document.getElementById("trFecha").value = hoyISO;
+        document.getElementById("boxMontoDestino").classList.add("d-none");
 
-  // Disparar change para recalcular etiquetas de moneda origen/destino
-  document.getElementById('trOrigen').dispatchEvent(new Event('change'));
-}
+        // Disparar change para recalcular etiquetas de moneda origen/destino
+        document.getElementById("trOrigen").dispatchEvent(new Event("change"));
+      }
 
-function limpiarFormCompuesto() {
-  document.getElementById("cmpFecha").value = hoyISO;
-  document.getElementById("cmpTipo").value = "GASTO";
-  document.getElementById("cmpBen").selectedIndex = 0;
-  document.getElementById("cmpCuenta").selectedIndex = 0;
-  document.getElementById("cmpMontoRef").value = "";
-  document.getElementById("selPlantillas").value = "";
-  document.getElementById("txtNombrePlantilla").value = "";
+      function limpiarFormCompuesto() {
+        document.getElementById("cmpFecha").value = hoyISO;
+        document.getElementById("cmpTipo").value = "GASTO";
+        document.getElementById("cmpBen").selectedIndex = 0;
+        document.getElementById("cmpCuenta").selectedIndex = 0;
+        document.getElementById("cmpMontoRef").value = "";
+        document.getElementById("selPlantillas").value = "";
+        document.getElementById("txtNombrePlantilla").value = "";
 
-  // Actualizar cmpMoneda según la cuenta por defecto
-  document.getElementById("cmpCuenta").dispatchEvent(new Event("change"));
+        // Actualizar cmpMoneda según la cuenta por defecto
+        document.getElementById("cmpCuenta").dispatchEvent(new Event("change"));
 
-  // Reiniciar partidas dejando una tarjeta vacía lista para llenar
-  document.getElementById("contenedorPartidas").innerHTML = "";
-  agregarPartidaCompuesta();
-  validarCuadreCompuesto();
-}
+        // Reiniciar partidas dejando una tarjeta vacía lista para llenar
+        document.getElementById("contenedorPartidas").innerHTML = "";
+        agregarPartidaCompuesta();
+        validarCuadreCompuesto();
+      }
 
       // --- VISTA 3: HISTORIAL Y CONCILIACIÓN ---
       const chkModoConc = document.getElementById("chkModoConciliacion");
@@ -2807,33 +3043,39 @@ function limpiarFormCompuesto() {
         catalogos = null; // Fuerza recarga al volver a Registrar o Historial
       }
 
- document.querySelectorAll('#tabsConfiguracion [data-tabcfg]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const tab = btn.dataset.tabcfg;
+      document
+        .querySelectorAll("#tabsConfiguracion [data-tabcfg]")
+        .forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const tab = btn.dataset.tabcfg;
 
-    // 1. Marcar pestaña activa en la barra de tabs
-    document.querySelectorAll('#tabsConfiguracion [data-tabcfg]').forEach(b => {
-      b.classList.toggle('active', b.dataset.tabcfg === tab);
-    });
+            // 1. Marcar pestaña activa en la barra de tabs
+            document
+              .querySelectorAll("#tabsConfiguracion [data-tabcfg]")
+              .forEach((b) => {
+                b.classList.toggle("active", b.dataset.tabcfg === tab);
+              });
 
-    // 2. Mostrar solo el panel correspondiente y ocultar los demás
-    ['cuentas', 'beneficiarios', 'categorias', 'monedas'].forEach(nombre => {
-      const panel = document.getElementById(`cfg-${nombre}`);
-      if (panel) panel.classList.toggle('d-none', nombre !== tab);
-    });
+            // 2. Mostrar solo el panel correspondiente y ocultar los demás
+            ["cuentas", "beneficiarios", "categorias", "monedas"].forEach(
+              (nombre) => {
+                const panel = document.getElementById(`cfg-${nombre}`);
+                if (panel) panel.classList.toggle("d-none", nombre !== tab);
+              },
+            );
 
-    // 3. Cargar los datos de la subpestaña seleccionada
-    if (tab === 'cuentas') {
-      renderCuentasCfg();
-    } else if (tab === 'beneficiarios') {
-      renderBeneficiariosCfg();
-    } else if (tab === 'categorias') {
-      renderCategoriasCfg();
-    } else if (tab === 'monedas') {
-      cargarConfigMonedas();
-    }
-  });
-});
+            // 3. Cargar los datos de la subpestaña seleccionada
+            if (tab === "cuentas") {
+              renderCuentasCfg();
+            } else if (tab === "beneficiarios") {
+              renderBeneficiariosCfg();
+            } else if (tab === "categorias") {
+              renderCategoriasCfg();
+            } else if (tab === "monedas") {
+              cargarConfigMonedas();
+            }
+          });
+        });
 
       async function inicializarConfiguracion() {
         listasCfg = await obtenerListasConfiguracionWeb();
@@ -3282,56 +3524,60 @@ function limpiarFormCompuesto() {
           await renderCategoriasCfg();
           await refrescarCatalogosGlobales();
         });
-// --- GESTOR DE MONEDAS EN CONFIGURACIÓN ---
-let listaMonedasConfig = [];
+      // --- GESTOR DE MONEDAS EN CONFIGURACIÓN ---
+      let listaMonedasConfig = [];
 
-function mostrarAlertaMoneda(texto, tipo = 'success') {
-  const el = document.getElementById('alertaMonedas');
-  el.className = `alert alert-${tipo} py-2 small`;
-  el.textContent = texto;
-  el.classList.remove('d-none');
-  setTimeout(() => el.classList.add('d-none'), 4000);
-}
+      function mostrarAlertaMoneda(texto, tipo = "success") {
+        const el = document.getElementById("alertaMonedas");
+        el.className = `alert alert-${tipo} py-2 small`;
+        el.textContent = texto;
+        el.classList.remove("d-none");
+        setTimeout(() => el.classList.add("d-none"), 4000);
+      }
 
-function resetearFormMoneda() {
-  document.getElementById('formMoneda').reset();
-  document.getElementById('monModoEdicion').value = '0';
-  document.getElementById('monCodigo').readOnly = false;
-  document.getElementById('monSimbolo').value = '$';
-  document.getElementById('monDecimales').value = '2';
-  document.getElementById('monMostrarInicio').checked = true;
-  document.getElementById('monActiva').checked = true;
-  document.getElementById('monActiva').disabled = false;
-  document.getElementById('btnGuardarMoneda').textContent = 'Agregar';
-  document.getElementById('btnNuevaMonedaReset').classList.add('d-none');
-}
+      function resetearFormMoneda() {
+        document.getElementById("formMoneda").reset();
+        document.getElementById("monModoEdicion").value = "0";
+        document.getElementById("monCodigo").readOnly = false;
+        document.getElementById("monSimbolo").value = "$";
+        document.getElementById("monDecimales").value = "2";
+        document.getElementById("monMostrarInicio").checked = true;
+        document.getElementById("monActiva").checked = true;
+        document.getElementById("monActiva").disabled = false;
+        document.getElementById("btnGuardarMoneda").textContent = "Agregar";
+        document.getElementById("btnNuevaMonedaReset").classList.add("d-none");
+      }
 
-async function cargarConfigMonedas() {
-  const tbody = document.getElementById('tbodyConfigMonedas');
-  try {
-    listaMonedasConfig = await obtenerMonedasWeb(false);
+      async function cargarConfigMonedas() {
+        const tbody = document.getElementById("tbodyConfigMonedas");
+        try {
+          listaMonedasConfig = await obtenerMonedasWeb(false);
 
-    if (listaMonedasConfig.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">No hay monedas registradas.</td></tr>';
-      return;
-    }
+          if (listaMonedasConfig.length === 0) {
+            tbody.innerHTML =
+              '<tr><td colspan="7" class="text-center text-muted py-3">No hay monedas registradas.</td></tr>';
+            return;
+          }
 
-    tbody.innerHTML = listaMonedasConfig.map(m => {
-      const badgeBase = m.es_base ? ' <span class="badge bg-secondary">Base</span>' : '';
-      const badgeInicio = m.mostrar_en_inicio
-        ? '<span class="badge bg-info-subtle text-info-emphasis">Sí</span>'
-        : '<span class="text-muted small">No</span>';
-      const badgeEstado = m.activa
-        ? '<span class="badge bg-success">Activa</span>'
-        : '<span class="badge bg-danger">Inactiva</span>';
+          tbody.innerHTML = listaMonedasConfig
+            .map((m) => {
+              const badgeBase = m.es_base
+                ? ' <span class="badge bg-secondary">Base</span>'
+                : "";
+              const badgeInicio = m.mostrar_en_inicio
+                ? '<span class="badge bg-info-subtle text-info-emphasis">Sí</span>'
+                : '<span class="text-muted small">No</span>';
+              const badgeEstado = m.activa
+                ? '<span class="badge bg-success">Activa</span>'
+                : '<span class="badge bg-danger">Inactiva</span>';
 
-      const btnToggle = m.es_base
-        ? ''
-        : `<button type="button" class="btn btn-sm ${m.activa ? 'btn-outline-danger' : 'btn-outline-success'} btn-toggle-mon" data-cod="${m.codigo}" data-act="${m.activa ? '0' : '1'}" title="${m.activa ? 'Desactivar' : 'Activar'}">
-             ${m.activa ? 'Desactivar' : 'Activar'}
+              const btnToggle = m.es_base
+                ? ""
+                : `<button type="button" class="btn btn-sm ${m.activa ? "btn-outline-danger" : "btn-outline-success"} btn-toggle-mon" data-cod="${m.codigo}" data-act="${m.activa ? "0" : "1"}" title="${m.activa ? "Desactivar" : "Activar"}">
+             ${m.activa ? "Desactivar" : "Activar"}
            </button>`;
 
-      return `
+              return `
         <tr>
           <td class="fw-bold">${m.codigo}${badgeBase}</td>
           <td>${m.nombre}</td>
@@ -3346,79 +3592,95 @@ async function cargarConfigMonedas() {
             ${btnToggle}
           </td>
         </tr>`;
-    }).join('');
+            })
+            .join("");
 
-    // Listeners Editar
-    tbody.querySelectorAll('.btn-edit-mon').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const m = listaMonedasConfig.find(x => x.codigo === btn.dataset.cod);
-        if (!m) return;
-        document.getElementById('monModoEdicion').value = '1';
-        document.getElementById('monCodigo').value = m.codigo;
-        document.getElementById('monCodigo').readOnly = true;
-        document.getElementById('monNombre').value = m.nombre;
-        document.getElementById('monSimbolo').value = m.simbolo;
-        document.getElementById('monDecimales').value = m.decimales;
-        document.getElementById('monMostrarInicio').checked = Boolean(m.mostrar_en_inicio);
-        document.getElementById('monActiva').checked = Boolean(m.activa);
-        document.getElementById('monActiva').disabled = Boolean(m.es_base);
-        document.getElementById('btnGuardarMoneda').textContent = 'Actualizar';
-        document.getElementById('btnNuevaMonedaReset').classList.remove('d-none');
-      });
-    });
+          // Listeners Editar
+          tbody.querySelectorAll(".btn-edit-mon").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const m = listaMonedasConfig.find(
+                (x) => x.codigo === btn.dataset.cod,
+              );
+              if (!m) return;
+              document.getElementById("monModoEdicion").value = "1";
+              document.getElementById("monCodigo").value = m.codigo;
+              document.getElementById("monCodigo").readOnly = true;
+              document.getElementById("monNombre").value = m.nombre;
+              document.getElementById("monSimbolo").value = m.simbolo;
+              document.getElementById("monDecimales").value = m.decimales;
+              document.getElementById("monMostrarInicio").checked = Boolean(
+                m.mostrar_en_inicio,
+              );
+              document.getElementById("monActiva").checked = Boolean(m.activa);
+              document.getElementById("monActiva").disabled = Boolean(
+                m.es_base,
+              );
+              document.getElementById("btnGuardarMoneda").textContent =
+                "Actualizar";
+              document
+                .getElementById("btnNuevaMonedaReset")
+                .classList.remove("d-none");
+            });
+          });
 
-    // Listeners Activar / Desactivar
-    tbody.querySelectorAll('.btn-toggle-mon').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const cod = btn.dataset.cod;
-        const nuevoEstado = btn.dataset.act === '1';
-        try {
-          const msg = await cambiarEstadoMonedaWeb(cod, nuevoEstado);
-          mostrarAlertaMoneda(msg, 'info');
-          catalogos = null; // Forzar recarga de catálogos en formularios
-          await cargarConfigMonedas();
+          // Listeners Activar / Desactivar
+          tbody.querySelectorAll(".btn-toggle-mon").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+              const cod = btn.dataset.cod;
+              const nuevoEstado = btn.dataset.act === "1";
+              try {
+                const msg = await cambiarEstadoMonedaWeb(cod, nuevoEstado);
+                mostrarAlertaMoneda(msg, "info");
+                catalogos = null; // Forzar recarga de catálogos en formularios
+                await cargarConfigMonedas();
+              } catch (err) {
+                mostrarAlertaMoneda(err.message, "danger");
+              }
+            });
+          });
         } catch (err) {
-          mostrarAlertaMoneda(err.message, 'danger');
+          tbody.innerHTML = `<tr><td colspan="7" class="text-danger text-center py-3">Error: ${err.message}</td></tr>`;
         }
-      });
-    });
-  } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="text-danger text-center py-3">Error: ${err.message}</td></tr>`;
-  }
-}
+      }
 
-document.getElementById('btnNuevaMonedaReset').addEventListener('click', resetearFormMoneda);
+      document
+        .getElementById("btnNuevaMonedaReset")
+        .addEventListener("click", resetearFormMoneda);
 
-document.getElementById('formMoneda').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const btn = document.getElementById('btnGuardarMoneda');
-  const esEdicion = document.getElementById('monModoEdicion').value === '1';
-  btn.disabled = true;
+      document
+        .getElementById("formMoneda")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const btn = document.getElementById("btnGuardarMoneda");
+          const esEdicion =
+            document.getElementById("monModoEdicion").value === "1";
+          btn.disabled = true;
 
-  try {
-    const msg = await guardarMonedaWeb(
-      {
-        codigo: document.getElementById('monCodigo').value,
-        nombre: document.getElementById('monNombre').value,
-        simbolo: document.getElementById('monSimbolo').value,
-        decimales: document.getElementById('monDecimales').value,
-        mostrar_en_inicio: document.getElementById('monMostrarInicio').checked,
-        activa: document.getElementById('monActiva').checked
-      },
-      esEdicion
-    );
+          try {
+            const msg = await guardarMonedaWeb(
+              {
+                codigo: document.getElementById("monCodigo").value,
+                nombre: document.getElementById("monNombre").value,
+                simbolo: document.getElementById("monSimbolo").value,
+                decimales: document.getElementById("monDecimales").value,
+                mostrar_en_inicio:
+                  document.getElementById("monMostrarInicio").checked,
+                activa: document.getElementById("monActiva").checked,
+              },
+              esEdicion,
+            );
 
-    resetearFormMoneda();
-    catalogos = null; // Invalidar caché de catálogos
-    mostrarAlertaMoneda(msg, 'success');
-    await cargarConfigMonedas();
-  } catch (err) {
-    mostrarAlertaMoneda(err.message, 'danger');
-  } finally {
-    btn.disabled = false;
-  }
-});
-      
+            resetearFormMoneda();
+            catalogos = null; // Invalidar caché de catálogos
+            mostrarAlertaMoneda(msg, "success");
+            await cargarConfigMonedas();
+          } catch (err) {
+            mostrarAlertaMoneda(err.message, "danger");
+          } finally {
+            btn.disabled = false;
+          }
+        });
+
       // --- VISTA 5: ANÁLISIS DE GASTOS ---
       let chartGastosInstance = null;
       let datosGastosBrutos = [];
@@ -3582,70 +3844,86 @@ document.getElementById('formMoneda').addEventListener('submit', async (e) => {
         .addEventListener("click", cargarDatosGastos);
 
       // --- VISTA 6: EXTRACTO DE CUENTA (IMPRIMIBLE) ---
-let extractoInicializado = false;
+      let extractoInicializado = false;
 
-function inicializarExtracto() {
-  const selCuenta = document.getElementById('extCuenta');
-  const valorPrevio = selCuenta.value;
-  selCuenta.innerHTML = '<option value="">-- Selecciona una cuenta --</option>';
+      function inicializarExtracto() {
+        const selCuenta = document.getElementById("extCuenta");
+        const valorPrevio = selCuenta.value;
+        selCuenta.innerHTML =
+          '<option value="">-- Selecciona una cuenta --</option>';
 
-  if (catalogos && Array.isArray(catalogos.cuentas)) {
-    catalogos.cuentas.forEach(c => selCuenta.add(new Option(c, c)));
-  }
-  if (valorPrevio) selCuenta.value = valorPrevio;
+        if (catalogos && Array.isArray(catalogos.cuentas)) {
+          catalogos.cuentas.forEach((c) => selCuenta.add(new Option(c, c)));
+        }
+        if (valorPrevio) selCuenta.value = valorPrevio;
 
-  if (!extractoInicializado) {
-    document.getElementById('extDesde').value = primerDiaMesISO;
-    document.getElementById('extHasta').value = hoyISO;
-    extractoInicializado = true;
-  }
-}
+        if (!extractoInicializado) {
+          document.getElementById("extDesde").value = primerDiaMesISO;
+          document.getElementById("extHasta").value = hoyISO;
+          extractoInicializado = true;
+        }
+      }
 
-function formatearMonedaExt(valor, moneda) {
-  const decimales = moneda === 'COP' ? 0 : 2;
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: moneda === 'VEF' ? 'VES' : moneda,
-    minimumFractionDigits: decimales,
-    maximumFractionDigits: decimales
-  }).format(valor);
-}
+      function formatearMonedaExt(valor, moneda) {
+        const decimales = moneda === "COP" ? 0 : 2;
+        return new Intl.NumberFormat("es-CO", {
+          style: "currency",
+          currency: moneda === "VEF" ? "VES" : moneda,
+          minimumFractionDigits: decimales,
+          maximumFractionDigits: decimales,
+        }).format(valor);
+      }
 
-document.getElementById('formFiltroExtracto').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const cuenta = document.getElementById('extCuenta').value;
-  const desde = document.getElementById('extDesde').value;
-  const hasta = document.getElementById('extHasta').value;
+      document
+        .getElementById("formFiltroExtracto")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const cuenta = document.getElementById("extCuenta").value;
+          const desde = document.getElementById("extDesde").value;
+          const hasta = document.getElementById("extHasta").value;
 
-  if (!cuenta || !desde || !hasta) {
-    return alert('Los tres filtros (Cuenta, Fecha Inicio y Fecha Final) son obligatorios.');
-  }
+          if (!cuenta || !desde || !hasta) {
+            return alert(
+              "Los tres filtros (Cuenta, Fecha Inicio y Fecha Final) son obligatorios.",
+            );
+          }
 
-  const btn = document.getElementById('btnGenerarExtracto');
-  const btnPrint = document.getElementById('btnImprimirExtracto');
-  btn.disabled = true;
-  btn.textContent = 'Generando...';
-  btnPrint.disabled = true;
+          const btn = document.getElementById("btnGenerarExtracto");
+          const btnPrint = document.getElementById("btnImprimirExtracto");
+          btn.disabled = true;
+          btn.textContent = "Generando...";
+          btnPrint.disabled = true;
 
-  try {
-    const res = await obtenerExtractoCuentaWeb(cuenta, desde, hasta);
-    const fmt = (v) => formatearMonedaExt(v, res.moneda);
+          try {
+            const res = await obtenerExtractoCuentaWeb(cuenta, desde, hasta);
+            const fmt = (v) => formatearMonedaExt(v, res.moneda);
 
-    // Encabezado
-    document.getElementById('extDocTituloCuenta').textContent = res.cuenta.nombre;
-    document.getElementById('extDocSubtitulo').textContent =
-      `${res.cuenta.institucion || 'Sin institución'} • ${res.cuenta.tipo_cuenta || 'Cuenta'} • Moneda: ${res.moneda}`;
-    document.getElementById('extDocPeriodo').textContent = `${res.fechaDesde} al ${res.fechaHasta}`;
-    document.getElementById('extDocFechaEmision').textContent = `Emitido: ${hoyISO}`;
+            // Encabezado
+            document.getElementById("extDocTituloCuenta").textContent =
+              res.cuenta.nombre;
+            document.getElementById("extDocSubtitulo").textContent =
+              `${res.cuenta.institucion || "Sin institución"} • ${res.cuenta.tipo_cuenta || "Cuenta"} • Moneda: ${res.moneda}`;
+            document.getElementById("extDocPeriodo").textContent =
+              `${res.fechaDesde} al ${res.fechaHasta}`;
+            document.getElementById("extDocFechaEmision").textContent =
+              `Emitido: ${hoyISO}`;
 
-    // Resumen
-    document.getElementById('extResInicial').textContent = fmt(res.saldoInicial);
-    document.getElementById('extResIngresos').textContent = fmt(res.totalIngresos);
-    document.getElementById('extResEgresos').textContent = fmt(res.totalEgresos);
-    document.getElementById('extResFinal').textContent = fmt(res.saldoFinal);
+            // Resumen
+            document.getElementById("extResInicial").textContent = fmt(
+              res.saldoInicial,
+            );
+            document.getElementById("extResIngresos").textContent = fmt(
+              res.totalIngresos,
+            );
+            document.getElementById("extResEgresos").textContent = fmt(
+              res.totalEgresos,
+            );
+            document.getElementById("extResFinal").textContent = fmt(
+              res.saldoFinal,
+            );
 
-    // Filas de tabla: Fila 0 = Saldo Inicial
-    let filasHTML = `
+            // Filas de tabla: Fila 0 = Saldo Inicial
+            let filasHTML = `
       <tr class="table-secondary fw-bold">
         <td>${res.fechaDesde}</td>
         <td colspan="2">SALDO INICIAL ANTERIOR AL PERIODO</td>
@@ -3653,21 +3931,27 @@ document.getElementById('formFiltroExtracto').addEventListener('submit', async (
         <td class="text-end">${fmt(res.saldoInicial)}</td>
       </tr>`;
 
-    if (res.movimientos.length === 0) {
-      filasHTML += `
+            if (res.movimientos.length === 0) {
+              filasHTML += `
         <tr>
           <td colspan="5" class="text-center text-muted py-3 fst-italic">
             No se registraron movimientos en esta cuenta durante el rango seleccionado.
           </td>
         </tr>`;
-    } else {
-      filasHTML += res.movimientos.map(m => {
-        const claseMonto = m.monto >= 0 ? 'text-success' : 'text-danger';
-        const signo = m.monto > 0 ? '+' : '';
-        const catTexto = m.subcategoria ? `${m.categoria} / ${m.subcategoria}` : m.categoria;
-        const memoHTML = m.memo ? `<br><small class="text-muted">${m.memo}</small>` : '';
+            } else {
+              filasHTML += res.movimientos
+                .map((m) => {
+                  const claseMonto =
+                    m.monto >= 0 ? "text-success" : "text-danger";
+                  const signo = m.monto > 0 ? "+" : "";
+                  const catTexto = m.subcategoria
+                    ? `${m.categoria} / ${m.subcategoria}`
+                    : m.categoria;
+                  const memoHTML = m.memo
+                    ? `<br><small class="text-muted">${m.memo}</small>`
+                    : "";
 
-        return `
+                  return `
           <tr>
             <td class="text-nowrap">${m.fecha}</td>
             <td><strong>${m.beneficiario}</strong>${memoHTML}</td>
@@ -3675,11 +3959,12 @@ document.getElementById('formFiltroExtracto').addEventListener('submit', async (
             <td class="text-end fw-semibold ${claseMonto}">${signo}${fmt(m.monto)}</td>
             <td class="text-end fw-bold">${fmt(m.saldoAcumulado)}</td>
           </tr>`;
-      }).join('');
-    }
+                })
+                .join("");
+            }
 
-    // Fila de cierre = Saldo Final
-    filasHTML += `
+            // Fila de cierre = Saldo Final
+            filasHTML += `
       <tr class="table-primary fw-bold">
         <td>${res.fechaHasta}</td>
         <td colspan="2">SALDO FINAL AL CIERRE DEL PERIODO</td>
@@ -3687,20 +3972,24 @@ document.getElementById('formFiltroExtracto').addEventListener('submit', async (
         <td class="text-end">${fmt(res.saldoFinal)}</td>
       </tr>`;
 
-    document.getElementById('tbodyExtracto').innerHTML = filasHTML;
-    document.getElementById('contenedorDocumentoExtracto').classList.remove('d-none');
-    btnPrint.disabled = false;
-  } catch (err) {
-    alert('Error al generar el extracto: ' + err.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Generar';
-  }
-});
+            document.getElementById("tbodyExtracto").innerHTML = filasHTML;
+            document
+              .getElementById("contenedorDocumentoExtracto")
+              .classList.remove("d-none");
+            btnPrint.disabled = false;
+          } catch (err) {
+            alert("Error al generar el extracto: " + err.message);
+          } finally {
+            btn.disabled = false;
+            btn.textContent = "Generar";
+          }
+        });
 
-document.getElementById('btnImprimirExtracto').addEventListener('click', () => {
-  window.print();
-});
+      document
+        .getElementById("btnImprimirExtracto")
+        .addEventListener("click", () => {
+          window.print();
+        });
     </script>
   </body>
 </html>

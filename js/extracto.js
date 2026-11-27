@@ -1,5 +1,8 @@
-import { supabase } from "./supabaseClient.js";
-
+import { supabase } from './supabaseClient.js';
+import {
+  obtenerMonedasWeb,
+  formatearMontoDinamico
+} from './monedas.js';
 function restarUnDia(fechaISO) {
   const d = new Date(`${fechaISO}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() - 1);

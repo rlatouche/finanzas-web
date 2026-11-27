@@ -3105,7 +3105,7 @@
         await renderCuentasCfg();
       }
 
-     // 1. Cuentas
+      // 1. Cuentas
       async function renderCuentasCfg() {
         const cont = document.getElementById("tablaCuentasCfg");
         cont.innerHTML =
@@ -3147,14 +3147,14 @@
 
         cont.querySelectorAll(".btn-edit-acc").forEach((btn) => {
           btn.addEventListener("click", () =>
-            abrirModalCuentaCfg(cuentas[parseInt(btn.dataset.idx, 10)])
+            abrirModalCuentaCfg(cuentas[parseInt(btn.dataset.idx, 10)]),
           );
         });
       }
 
       async function poblarSelectMonedasCuenta(
         monedaSeleccionada = "COP",
-        incluirInactivas = false
+        incluirInactivas = false,
       ) {
         const select = document.getElementById("cfgAccMoneda");
         if (!select) return;
@@ -3164,7 +3164,7 @@
           select.innerHTML = monedas
             .map(
               (m) =>
-                `<option value="${m.codigo}">${m.codigo} - ${m.nombre}</option>`
+                `<option value="${m.codigo}">${m.codigo} - ${m.nombre}</option>`,
             )
             .join("");
 
@@ -3173,7 +3173,8 @@
           }
         } catch (err) {
           console.error("Error cargando monedas para cuenta:", err);
-          select.innerHTML = '<option value="COP">COP - Peso Colombiano</option>';
+          select.innerHTML =
+            '<option value="COP">COP - Peso Colombiano</option>';
         }
       }
 

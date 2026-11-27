@@ -3729,6 +3729,7 @@
       // --- VISTA 5: ANÁLISIS DE GASTOS ---
       let chartGastosInstance = null;
       let datosGastosBrutos = [];
+      let tasasGastosVigentes = { COP: 1 };
       let gastosInicializado = false;
 
       async function inicializarGastos() {
@@ -3747,20 +3748,25 @@
         tbody.innerHTML =
           '<tr><td colspan="3" class="text-center text-muted py-3">Consultando gastos...</td></tr>';
 
-        try {
-          const res = await obtenerDatosGastosWeb(desde, hasta);
-          datosGastosBrutos = res.gastos;
+       try {
+  const [res, { tasas }] = await Promise.all([
+    obtenerDatosGastosWeb(desde, hasta),
+    obtenerTasasVigentesMapa(hasta || null)
+  ]);
 
-          const selCat = document.getElementById("gastosFiltroCat");
-          const valorPrevio = selCat.value;
-          selCat.innerHTML = '<option value="">Todas</option>';
-          res.categorias.forEach((c) => selCat.add(new Option(c, c)));
-          if (res.categorias.includes(valorPrevio)) selCat.value = valorPrevio;
+  datosGastosBrutos = res.gastos;
+  tasasGastosVigentes = tasas;
 
-          renderizarGastos();
-        } catch (err) {
-          tbody.innerHTML = `<tr><td colspan="3" class="text-danger">Error: ${err.message}</td></tr>`;
-        }
+  const selCat = document.getElementById("gastosFiltroCat");
+  const valorPrevio = selCat.value;
+  selCat.innerHTML = '<option value="">Todas</option>';
+  res.categorias.forEach((c) => selCat.add(new Option(c, c)));
+  if (res.categorias.includes(valorPrevio)) selCat.value = valorPrevio;
+
+  renderizarGastos();
+} catch (err) {
+  tbody.innerHTML = `<tr><td colspan="3" class="text-danger">Error: ${err.message}</td></tr>`;
+}
       }
 
       function gestionarFiltrosGastos() {
@@ -3786,20 +3792,24 @@
 
         const agrupados = {};
         let total = 0;
+        
+datosGastosBrutos.forEach((g) => {
+  const cod = (g.moneda || "COP").toUpperCase();
+  const tasa = cod === "COP" ? 1 : (tasasGastosVigentes[cod] || 1);
+  const montoEnCOP = Math.abs(g.monto) * tasa;
 
-        datosGastosBrutos.forEach((g) => {
-          let clave;
-          if (modo === "CATEGORIA") {
-            if (fCat !== "" && g.categoria !== fCat) return;
-            clave = fCat !== "" ? g.subcategoria : g.categoria;
-            thNombre.textContent = fCat !== "" ? "Subcategoría" : "Categoría";
-          } else {
-            clave = g.beneficiario;
-            thNombre.textContent = "Beneficiario";
-          }
+  let clave;
+  if (modo === "CATEGORIA") {
+    if (fCat !== "" && g.categoria !== fCat) return;
+    clave = fCat !== "" ? g.subcategoria : g.categoria;
+    thNombre.textContent = fCat !== "" ? "Subcategoría" : "Categoría";
+  } else {
+    clave = g.beneficiario;
+    thNombre.textContent = "Beneficiario";
+  }
 
           const monto = Math.abs(g.monto);
-          agrupados[clave] = (agrupados[clave] || 0) + monto;
+          agrupados[clave] = (agrupados[clave] || 0) + montoEnCop;
           total += monto;
         });
 

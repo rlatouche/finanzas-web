@@ -1792,7 +1792,8 @@
         mapaMonedasGlobal,
       ) {
         const num = parseFloat(valor) || 0;
-        if (moneda === "COP") return formatearMontoDinamico(num, "COP", mapaMonedasGlobal);
+        if (moneda === "COP")
+          return formatearMontoDinamico(num, "COP", mapaMonedasGlobal);
         return `${moneda} ${num.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       }
       // --- VISTA 1: SALDOS CON FILTROS ---

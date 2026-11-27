@@ -881,8 +881,9 @@
             </div>
           </div>
         </div>
+
 <!-- GESTOR DE MONEDAS -->
-<div id="cfg-monedas" class="card p-3 shadow-sm border-0 d-none"">
+<div id="cfg-monedas" class="card p-3 shadow-sm border-0 d-none">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h6 class="fw-bold text-primary mb-0">💱 Gestión de Monedas</h6>
     <button type="button" id="btnNuevaMonedaReset" class="btn btn-outline-secondary btn-sm d-none">
@@ -2801,28 +2802,27 @@ function limpiarFormCompuesto() {
         catalogos = null; // Fuerza recarga al volver a Registrar o Historial
       }
 
-      document.querySelectorAll("#tabsConfiguracion button").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          document
-            .querySelectorAll("#tabsConfiguracion button")
-            .forEach((b) => b.classList.remove("active"));
-          btn.classList.add("active");
-          const tab = btn.dataset.tabcfg;
-          document
-            .getElementById("cfg-cuentas")
-            .classList.toggle("d-none", tab !== "cuentas");
-          document
-            .getElementById("cfg-beneficiarios")
-            .classList.toggle("d-none", tab !== "beneficiarios");
-          document
-            .getElementById("cfg-categorias")
-            .classList.toggle("d-none", tab !== "categorias");
+     document.querySelectorAll('#tabsConfiguracion [data-tabcfg]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tabcfg;
 
-          if (tab === "cuentas") await renderCuentasCfg();
-          if (tab === "beneficiarios") await renderBeneficiariosCfg();
-          if (tab === "categorias") await renderCategoriasCfg();
-        });
-      });
+    // 1. Marcar pestaña activa en la barra de tabs
+    document.querySelectorAll('#tabsConfiguracion [data-tabcfg]').forEach(b => {
+      b.classList.toggle('active', b.dataset.tabcfg === tab);
+    });
+
+    // 2. Mostrar solo el panel correspondiente y ocultar los demás
+    ['cuentas', 'beneficiarios', 'categorias', 'monedas'].forEach(nombre => {
+      const panel = document.getElementById(`cfg-${nombre}`);
+      if (panel) panel.classList.toggle('d-none', nombre !== tab);
+    });
+
+    // 3. Si entra a Monedas, refrescar la tabla
+    if (tab === 'monedas') {
+      cargarConfigMonedas();
+    }
+  });
+});
 
       async function inicializarConfiguracion() {
         listasCfg = await obtenerListasConfiguracionWeb();

@@ -6,33 +6,25 @@ import {
 } from "./monedas.js";
 
 export async function obtenerResumenSaldosWeb(fechaCorte) {
-  const hoy = new Date().toISOString().split("T")[0];
+  const hoy = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Bogota",
+  });
   const fecha = fechaCorte || hoy;
 
-  // 1. Obtener catálogo de monedas (activas e inactivas para formatear cuentas históricas) y tasas vigentes
-  const [listaMonedas, { tasas, fecha: fechaTasa }] = await Promise.all([
+  // 1. Obtener catálogo de monedas y tasas vigentes hasta la fecha de corte
+  const [listaMonedas, { tasas }] = await Promise.all([
     obtenerMonedasWeb(false),
-    obtenerTasasVigentesMapa(fechaCorte || null),
+    obtenerTasasVigentesMapa(fecha),
   ]);
 
-  // Crear diccionario rápido por código: { COP: { simbolo: '$', decimales: 2 }, ... }
   const mapaMonedas = Object.fromEntries(
     listaMonedas.map((m) => [m.codigo.toUpperCase(), m]),
   );
 
-  // 2. Al recorrer cada cuenta para convertir su saldo a COP:
-  // Antes: const tasa = moneda === 'USD' ? tasas.usd : ...
-  // Ahora (100% dinámico para cualquier divisa):
-  const codMoneda = (cuenta.moneda || "COP").toUpperCase();
-  const tasaACOP = codMoneda === "COP" ? 1 : tasas[codMoneda] || 0;
-  const saldoEnCOP = saldoOriginal * tasaACOP;
-
-  // 3. Para mostrar el saldo formateado en la moneda original de la cuenta:
-  const textoSaldoOriginal = formatearMontoDinamico(
-    saldoOriginal,
-    codMoneda,
-    mapaMonedas,
-  );
+  // Compatibilidad con registros históricos en VEF
+  if (tasas.VES && !tasas.VEF) {
+    tasas.VEF = tasas.VES;
+  }
 
   // 2. Obtener cuentas activas
   const { data: cuentas, error: errCuentas } = await supabase
@@ -65,7 +57,7 @@ export async function obtenerResumenSaldosWeb(fechaCorte) {
   return cuentasActivas.map((c) => {
     const moneda = (c.moneda_codigo || "COP").toUpperCase();
     const saldoOrig = saldosPorNombre[c.nombre] || 0;
-    const tasa = tasas[moneda] || 1;
+    const tasa = moneda === "COP" ? 1 : tasas[moneda] || 1;
 
     return {
       institucion: c.institucion || "",
@@ -73,6 +65,11 @@ export async function obtenerResumenSaldosWeb(fechaCorte) {
       nombre: c.nombre,
       moneda,
       saldoOriginal: saldoOrig,
+      saldoOriginalFormateado: formatearMontoDinamico(
+        saldoOrig,
+        moneda,
+        mapaMonedas,
+      ),
       saldoCOP: saldoOrig * tasa,
     };
   });

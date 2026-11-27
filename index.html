@@ -1792,7 +1792,7 @@
         mapaMonedasGlobal,
       ) {
         const num = parseFloat(valor) || 0;
-        if (moneda === "COP") return fmtCOP.format(num);
+        if (moneda === "COP") return formatearMontoDinamico(num, "COP", mapaMonedasGlobal);
         return `${moneda} ${num.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       }
       // --- VISTA 1: SALDOS CON FILTROS ---
@@ -3820,7 +3820,7 @@
         });
 
         document.getElementById("gastosTotalValor").textContent =
-          fmtCOP.format(total);
+          formatearMontoDinamico(total, "COP", mapaMonedasGlobal);
 
         const ordenados = Object.keys(agrupados).sort(
           (a, b) => agrupados[b] - agrupados[a],
@@ -3838,7 +3838,7 @@
               return `
             <tr>
               <td class="fw-semibold">${clave}</td>
-              <td class="text-end text-danger fw-bold">${fmtCOP.format(val)}</td>
+              <td class="text-end text-danger fw-bold">${formatearMontoDinamico(val, "COP", mapaMonedasGlobal)}</td>
               <td class="text-end text-muted small">${pct}%</td>
             </tr>`;
             })

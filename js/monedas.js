@@ -120,7 +120,8 @@ export function formatearMontoDinamico(valor, codigoMoneda, mapaMonedas = {}) {
     maximumFractionDigits: decimales,
   }).format(num);
 
-  return `${simbolo} ${formateado} ${cod}`;
+//  return `${simbolo} ${formateado} ${cod}`;
+  return `${simbolo} ${formateado}` ;
 }
 
 /**

@@ -1786,7 +1786,11 @@
         currency: "COP",
         maximumFractionDigits: 0,
       });
-      function formatearMontoDinamico(valor, moneda = "COP", mapaMonedasGlobal) {
+      function formatearMontoDinamico(
+        valor,
+        moneda = "COP",
+        mapaMonedasGlobal,
+      ) {
         const num = parseFloat(valor) || 0;
         if (moneda === "COP") return fmtCOP.format(num);
         return `${moneda} ${num.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -2905,11 +2909,8 @@
 
         document.getElementById("concSaldoInicial").textContent =
           formatearMontoDinamico(saldos.inicial, moneda, mapaMonedasGlobal);
-        document.getElementById("concSaldoFinal").textContent = formatearMontoDinamico(
-          saldos.final,
-          moneda,
-          mapaMonedasGlobal,
-        );
+        document.getElementById("concSaldoFinal").textContent =
+          formatearMontoDinamico(saldos.final, moneda, mapaMonedasGlobal);
         recalcularTotalesConciliacion();
       }
 
@@ -2921,7 +2922,11 @@
         const dif = saldoFinalSistemaNum - saldoBanco;
 
         const elDif = document.getElementById("concDiferencia");
-        elDif.textContent = formatearMontoDinamico(dif, moneda, mapaMonedasGlobal);
+        elDif.textContent = formatearMontoDinamico(
+          dif,
+          moneda,
+          mapaMonedasGlobal,
+        );
         elDif.className =
           Math.abs(dif) < 0.01
             ? "fw-bold fs-5 text-success"
@@ -3952,7 +3957,8 @@
 
           try {
             const res = await obtenerExtractoCuentaWeb(cuenta, desde, hasta);
-            const fmt = (v) => formatearMontoDinamico(v, res.moneda, mapaMonedasGlobal);
+            const fmt = (v) =>
+              formatearMontoDinamico(v, res.moneda, mapaMonedasGlobal);
 
             // Encabezado
             document.getElementById("extDocTituloCuenta").textContent =

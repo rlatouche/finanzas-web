@@ -1786,29 +1786,12 @@
         currency: "COP",
         maximumFractionDigits: 0,
       });
-      function formatearMontoDinamico(
-        valor,
-        moneda = "COP",
-        mapaMonedasGlobal,
-      ) {
-        const num = parseFloat(valor) || 0;
-        if (moneda === "COP")
-          return formatearMontoDinamico(num, "COP", mapaMonedasGlobal);
-        return `${moneda} ${num.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      }
+    
       // --- VISTA 1: SALDOS CON FILTROS ---
       let cacheSaldosActual = [];
       let tasasSaldosActual = {};
 
-      function formatearMontoDinamico(valor, moneda, mapaMonedasGlobal) {
-        const cod = (moneda || "COP").toUpperCase();
-        const decimales = cod === "COP" ? 0 : 2;
-        const formatted = new Intl.NumberFormat("es-CO", {
-          minimumFractionDigits: decimales,
-          maximumFractionDigits: decimales,
-        }).format(valor);
-        return cod === "COP" ? `$ ${formatted}` : `${cod} ${formatted}`;
-      }
+
 
       function poblarSelectoresSaldos(cuentas) {
         const selMoneda = document.getElementById("saldosFiltroMoneda");
@@ -3926,15 +3909,7 @@
         }
       }
 
-      function formatearMontoDinamico(valor, moneda, mapaMonedasGlobal) {
-        const decimales = moneda === "COP" ? 0 : 2;
-        return new Intl.NumberFormat("es-CO", {
-          style: "currency",
-          currency: moneda === "VEF" ? "VES" : moneda,
-          minimumFractionDigits: decimales,
-          maximumFractionDigits: decimales,
-        }).format(valor);
-      }
+    
 
       document
         .getElementById("formFiltroExtracto")

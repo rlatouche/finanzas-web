@@ -173,13 +173,19 @@
           </p>
 
           <!-- Referencia rápida de Tasas de Cambio del día -->
-<div class="d-flex justify-content-between align-items-center mb-2">
-  <h6 class="fw-bold text-secondary mb-0">💱 Tasas de Cambio Referenciales (a COP)</h6>
-  <small id="lblFechaTasasInicio" class="text-muted">Cargando...</small>
-</div>
-<div id="contenedorTasasInicio" class="row g-2 mb-4">
-  <div class="col-12 text-center text-muted small py-2">Consultando tasas...</div>
-</div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold text-secondary mb-0">
+              💱 Tasas de Cambio Referenciales (a COP)
+            </h6>
+            <small id="lblFechaTasasInicio" class="text-muted"
+              >Cargando...</small
+            >
+          </div>
+          <div id="contenedorTasasInicio" class="row g-2 mb-4">
+            <div class="col-12 text-center text-muted small py-2">
+              Consultando tasas...
+            </div>
+          </div>
           <div
             class="text-muted mt-2"
             style="font-size: 0.75rem"
@@ -1555,13 +1561,13 @@
       import { obtenerDatosGastosWeb } from "./js/gastos.js";
       import { obtenerExtractoCuentaWeb } from "./js/extracto.js";
       import { supabase } from "./js/supabaseClient.js";
- import {
-  obtenerMonedasWeb,
-  guardarMonedaWeb,
-  cambiarEstadoMonedaWeb,
-  formatearMontoDinamico,
-  obtenerTasasVigentesMapa
-} from './js/monedas.js';
+      import {
+        obtenerMonedasWeb,
+        guardarMonedaWeb,
+        cambiarEstadoMonedaWeb,
+        formatearMontoDinamico,
+        obtenerTasasVigentesMapa,
+      } from "./js/monedas.js";
       const session = await verificarSesion();
       if (!session) throw new Error("Sin sesión");
 
@@ -1722,51 +1728,57 @@
       });
 
       async function cargarTasasInicio() {
-  const contenedor = document.getElementById('contenedorTasasInicio');
-  const lblFecha = document.getElementById('lblFechaTasasInicio');
-  if (!contenedor) return;
+        const contenedor = document.getElementById("contenedorTasasInicio");
+        const lblFecha = document.getElementById("lblFechaTasasInicio");
+        if (!contenedor) return;
 
-  try {
-    const [monedasActivas, { tasas, fecha }] = await Promise.all([
-      obtenerMonedasWeb(true),
-      obtenerTasasVigentesMapa()
-    ]);
+        try {
+          const [monedasActivas, { tasas, fecha }] = await Promise.all([
+            obtenerMonedasWeb(true),
+            obtenerTasasVigentesMapa(),
+          ]);
 
-    if (lblFecha) {
-      lblFecha.textContent = fecha ? `Actualizado: ${fecha}` : 'Sin registros recientes';
-    }
+          if (lblFecha) {
+            lblFecha.textContent = fecha
+              ? `Actualizado: ${fecha}`
+              : "Sin registros recientes";
+          }
 
-    const monedasMostrar = monedasActivas.filter(m => !m.es_base && m.mostrar_en_inicio);
+          const monedasMostrar = monedasActivas.filter(
+            (m) => !m.es_base && m.mostrar_en_inicio,
+          );
 
-    if (monedasMostrar.length === 0) {
-      contenedor.innerHTML = `
+          if (monedasMostrar.length === 0) {
+            contenedor.innerHTML = `
         <div class="col-12 text-muted small">
           No hay monedas configuradas para mostrar en Inicio.
         </div>`;
-      return;
-    }
+            return;
+          }
 
-    contenedor.innerHTML = monedasMostrar.map(m => {
-      const tasa = tasas[m.codigo];
-      const valorTexto = tasa
-        ? `$ ${new Intl.NumberFormat('es-CO', {
-            minimumFractionDigits: m.decimales,
-            maximumFractionDigits: m.decimales
-          }).format(tasa)}`
-        : 'N/D';
+          contenedor.innerHTML = monedasMostrar
+            .map((m) => {
+              const tasa = tasas[m.codigo];
+              const valorTexto = tasa
+                ? `$ ${new Intl.NumberFormat("es-CO", {
+                    minimumFractionDigits: m.decimales,
+                    maximumFractionDigits: m.decimales,
+                  }).format(tasa)}`
+                : "N/D";
 
-      return `
+              return `
         <div class="col-6 col-md-4">
           <div class="card border-0 shadow-sm p-2 text-center h-100">
             <div class="small fw-bold text-muted">${m.codigo} · ${m.nombre}</div>
             <div class="fs-6 fw-bold text-primary mt-1">${valorTexto}</div>
           </div>
         </div>`;
-    }).join('');
-  } catch (err) {
-    contenedor.innerHTML = `<div class="col-12 text-danger small">Error cargando tasas: ${err.message}</div>`;
-  }
-}
+            })
+            .join("");
+        } catch (err) {
+          contenedor.innerHTML = `<div class="col-12 text-danger small">Error cargando tasas: ${err.message}</div>`;
+        }
+      }
 
       // --- FORMATEO MONEDA ---
       const fmtCOP = new Intl.NumberFormat("es-CO", {
@@ -3140,49 +3152,59 @@
         });
       }
 
-async function poblarSelectMonedasCuenta(monedaSeleccionada = 'COP', incluirInactivas = false) {
-  const select = document.getElementById('cfgAccMoneda');
-  if (!select) return;
+      async function poblarSelectMonedasCuenta(
+        monedaSeleccionada = "COP",
+        incluirInactivas = false,
+      ) {
+        const select = document.getElementById("cfgAccMoneda");
+        if (!select) return;
 
-  const monedas = await obtenerMonedasWeb(!incluirInactivas);
-  select.innerHTML = monedas
-    .map(m => `<option value="${m.codigo}">${m.codigo} - ${m.nombre}</option>`)
-    .join('');
+        const monedas = await obtenerMonedasWeb(!incluirInactivas);
+        select.innerHTML = monedas
+          .map(
+            (m) =>
+              `<option value="${m.codigo}">${m.codigo} - ${m.nombre}</option>`,
+          )
+          .join("");
 
-  if (monedaSeleccionada) {
-    select.value = monedaSeleccionada;
-  }
-}
+        if (monedaSeleccionada) {
+          select.value = monedaSeleccionada;
+        }
+      }
 
-async function abrirModalCuentaCfg(datos = null) {
-  const selMoneda = document.getElementById("cfgAccMoneda");
-  
-  if (datos) {
-    await poblarSelectMonedasCuenta(datos.moneda, true);
-    document.getElementById("tituloModalCuenta").textContent = "Editar Cuenta";
-    document.getElementById("cfgAccId").value = datos.idFila;
-    document.getElementById("cfgAccInstitucion").value = datos.institucion;
-    document.getElementById("cfgAccTipo").value = datos.tipo || "Ahorros";
-    document.getElementById("cfgAccNombre").value = datos.nombre;
-    document.getElementById("cfgAccFecha").value = datos.fechaApertura || "";
-    selMoneda.value = datos.moneda;
-    selMoneda.disabled = true;
-    document.getElementById("cfgAccEstado").value =
-      datos.estado === "Inactiva" ? "Inactiva" : "Activa";
-  } else {
-    await poblarSelectMonedasCuenta("COP", false);
-    document.getElementById("tituloModalCuenta").textContent = "Nueva Cuenta";
-    document.getElementById("cfgAccId").value = "";
-    document.getElementById("cfgAccInstitucion").value = "";
-    document.getElementById("cfgAccTipo").value = "Ahorros";
-    document.getElementById("cfgAccNombre").value = "";
-    document.getElementById("cfgAccFecha").value = hoyISO;
-    selMoneda.disabled = false;
-    selMoneda.value = "COP";
-    document.getElementById("cfgAccEstado").value = "Activa";
-  }
-  modalCuentaBS.show();
-}
+      async function abrirModalCuentaCfg(datos = null) {
+        const selMoneda = document.getElementById("cfgAccMoneda");
+
+        if (datos) {
+          await poblarSelectMonedasCuenta(datos.moneda, true);
+          document.getElementById("tituloModalCuenta").textContent =
+            "Editar Cuenta";
+          document.getElementById("cfgAccId").value = datos.idFila;
+          document.getElementById("cfgAccInstitucion").value =
+            datos.institucion;
+          document.getElementById("cfgAccTipo").value = datos.tipo || "Ahorros";
+          document.getElementById("cfgAccNombre").value = datos.nombre;
+          document.getElementById("cfgAccFecha").value =
+            datos.fechaApertura || "";
+          selMoneda.value = datos.moneda;
+          selMoneda.disabled = true;
+          document.getElementById("cfgAccEstado").value =
+            datos.estado === "Inactiva" ? "Inactiva" : "Activa";
+        } else {
+          await poblarSelectMonedasCuenta("COP", false);
+          document.getElementById("tituloModalCuenta").textContent =
+            "Nueva Cuenta";
+          document.getElementById("cfgAccId").value = "";
+          document.getElementById("cfgAccInstitucion").value = "";
+          document.getElementById("cfgAccTipo").value = "Ahorros";
+          document.getElementById("cfgAccNombre").value = "";
+          document.getElementById("cfgAccFecha").value = hoyISO;
+          selMoneda.disabled = false;
+          selMoneda.value = "COP";
+          document.getElementById("cfgAccEstado").value = "Activa";
+        }
+        modalCuentaBS.show();
+      }
 
       // 2. Beneficiarios
       async function renderBeneficiariosCfg() {

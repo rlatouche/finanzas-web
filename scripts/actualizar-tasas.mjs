@@ -120,8 +120,6 @@ async function actualizarTasas() {
     );
   }
   console.log("✅ Tabla vertical tasa_monedas actualizada:", tasasMapa);
-
- 
 }
 
 actualizarTasas().catch((err) => {

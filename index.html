@@ -1526,6 +1526,28 @@
       let movimientosHistorial = [];
       let saldoFinalSistemaNum = 0;
 
+      // Diccionario global en memoria con la configuración de cada moneda
+let mapaMonedasGlobal = {
+  COP: { codigo: "COP", simbolo: "$", decimales: 2 },
+  USD: { codigo: "USD", simbolo: "$", decimales: 2 },
+  EUR: { codigo: "EUR", simbolo: "€", decimales: 2 },
+  VES: { codigo: "VES", simbolo: "Bs.", decimales: 2 },
+};
+
+// Consulta la tabla `monedas` en Supabase y actualiza el diccionario en memoria
+async function refrescarMapaMonedas() {
+  try {
+    const lista = await obtenerMonedasWeb(false); // Trae activas e inactivas para formatear historial
+    mapaMonedasGlobal = Object.fromEntries(
+      lista.map((m) => [m.codigo.toUpperCase(), m])
+    );
+  } catch (err) {
+    console.error("Error cargando mapa de monedas:", err);
+  }
+}
+
+      
+
       import { verificarSesion, cerrarSesion } from "./js/auth.js";
       import { obtenerResumenSaldosWeb } from "./js/saldos.js";
       import {
@@ -1626,6 +1648,7 @@
         ) {
           await inicializarCatalogosYFormularios();
         }
+        await refrescarMapaMonedas();
         if (vista === "inicio") await cargarBienvenida();
         if (vista === "saldos") cargarSaldos();
         if (vista === "gastos") await inicializarGastos();
@@ -3585,6 +3608,10 @@
         const tbody = document.getElementById("tbodyConfigMonedas");
         try {
           listaMonedasConfig = await obtenerMonedasWeb(false);
+// Sincronizamos también el diccionario global con los últimos cambios
+    mapaMonedasGlobal = Object.fromEntries(
+      listaMonedasConfig.map((m) => [m.codigo.toUpperCase(), m])
+          
 
           if (listaMonedasConfig.length === 0) {
             tbody.innerHTML =

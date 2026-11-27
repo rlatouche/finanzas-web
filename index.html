@@ -3206,6 +3206,11 @@
         modalCuentaBS.show();
       }
 
+       document
+        .getElementById("btnNuevaCuenta")
+        .addEventListener("click", () => abrirModalCuentaCfg(null));
+
+
       // 2. Beneficiarios
       async function renderBeneficiariosCfg() {
         const cont = document.getElementById("tablaBenCfg");

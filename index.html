@@ -2807,7 +2807,7 @@ function limpiarFormCompuesto() {
         catalogos = null; // Fuerza recarga al volver a Registrar o Historial
       }
 
-     document.querySelectorAll('#tabsConfiguracion [data-tabcfg]').forEach(btn => {
+ document.querySelectorAll('#tabsConfiguracion [data-tabcfg]').forEach(btn => {
   btn.addEventListener('click', () => {
     const tab = btn.dataset.tabcfg;
 
@@ -2822,8 +2822,14 @@ function limpiarFormCompuesto() {
       if (panel) panel.classList.toggle('d-none', nombre !== tab);
     });
 
-    // 3. Si entra a Monedas, refrescar la tabla
-    if (tab === 'monedas') {
+    // 3. Cargar los datos de la subpestaña seleccionada
+    if (tab === 'cuentas') {
+      renderCuentasCfg();
+    } else if (tab === 'beneficiarios') {
+      renderBeneficiariosCfg();
+    } else if (tab === 'categorias') {
+      renderCategoriasCfg();
+    } else if (tab === 'monedas') {
       cargarConfigMonedas();
     }
   });

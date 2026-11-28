@@ -2094,14 +2094,14 @@
           }
         });
       }
- function mostrarAlertaReg(texto, tipo = "success") {
-  const el = document.getElementById("alertaRegistro");
-  el.className = `alert alert-${tipo}`;
-  el.textContent = texto;
-  el.classList.remove("d-none");
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
-  setTimeout(() => el.classList.add("d-none"), 5000);
-}
+      function mostrarAlertaReg(texto, tipo = "success") {
+        const el = document.getElementById("alertaRegistro");
+        el.className = `alert alert-${tipo}`;
+        el.textContent = texto;
+        el.classList.remove("d-none");
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => el.classList.add("d-none"), 5000);
+      }
       function seleccionarSubvistaRegistro(sub) {
         document
           .querySelectorAll("#tabsRegistro button")

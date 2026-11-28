@@ -2047,50 +2047,53 @@
 
       // --- VISTA 2: REGISTRAR / EDITAR ---
 
-function actualizarEstadoDivisaEnSplits() {
-  const cuentaOrigen = document.getElementById("cmpCuenta")?.value || "";
-  const monedaPrincipal = (
-    document.getElementById("cmpMoneda")?.value ||
-    catalogos.mapaCuentas[cuentaOrigen] ||
-    "COP"
-  ).trim().toUpperCase();
+      function actualizarEstadoDivisaEnSplits() {
+        const cuentaOrigen = document.getElementById("cmpCuenta")?.value || "";
+        const monedaPrincipal = (
+          document.getElementById("cmpMoneda")?.value ||
+          catalogos.mapaCuentas[cuentaOrigen] ||
+          "COP"
+        )
+          .trim()
+          .toUpperCase();
 
-  document.querySelectorAll(".partida-card").forEach((card) => {
-    const selTipo = card.querySelector(".p-tipo");
-    const selDest = card.querySelector(".p-dest");
-    const boxDivisa = card.querySelector(".div-monto-divisa-split");
-    const inpDivisa = card.querySelector(".p-divisa");
+        document.querySelectorAll(".partida-card").forEach((card) => {
+          const selTipo = card.querySelector(".p-tipo");
+          const selDest = card.querySelector(".p-dest");
+          const boxDivisa = card.querySelector(".div-monto-divisa-split");
+          const inpDivisa = card.querySelector(".p-divisa");
 
-    if (!boxDivisa || !inpDivisa) return;
+          if (!boxDivisa || !inpDivisa) return;
 
-    const esTransferencia = selTipo && selTipo.value === "TRANSFERENCIA";
-    const cuentaDest = selDest ? selDest.value : "";
+          const esTransferencia = selTipo && selTipo.value === "TRANSFERENCIA";
+          const cuentaDest = selDest ? selDest.value : "";
 
-    if (!esTransferencia || !cuentaDest) {
-      boxDivisa.classList.add("d-none");
-      inpDivisa.required = false;
-      inpDivisa.value = "";
-      return;
-    }
+          if (!esTransferencia || !cuentaDest) {
+            boxDivisa.classList.add("d-none");
+            inpDivisa.required = false;
+            inpDivisa.value = "";
+            return;
+          }
 
-    const monedaDestino = (
-      catalogos.mapaCuentas[cuentaDest] ||
-      monedaPrincipal
-    ).trim().toUpperCase();
+          const monedaDestino = (
+            catalogos.mapaCuentas[cuentaDest] || monedaPrincipal
+          )
+            .trim()
+            .toUpperCase();
 
-    if (monedaDestino === monedaPrincipal) {
-      // Misma moneda: ocultar y limpiar
-      boxDivisa.classList.add("d-none");
-      inpDivisa.required = false;
-      inpDivisa.value = "";
-    } else {
-      // Distinta moneda: mostrar y volver obligatorio
-      boxDivisa.classList.remove("d-none");
-      inpDivisa.required = true;
-      inpDivisa.placeholder = `Obligatorio (${monedaDestino})`;
-    }
-  });
-}
+          if (monedaDestino === monedaPrincipal) {
+            // Misma moneda: ocultar y limpiar
+            boxDivisa.classList.add("d-none");
+            inpDivisa.required = false;
+            inpDivisa.value = "";
+          } else {
+            // Distinta moneda: mostrar y volver obligatorio
+            boxDivisa.classList.remove("d-none");
+            inpDivisa.required = true;
+            inpDivisa.placeholder = `Obligatorio (${monedaDestino})`;
+          }
+        });
+      }
       function mostrarAlertaReg(texto, tipo = "success") {
         const el = document.getElementById("alertaRegistro");
         el.className = `alert alert-${tipo}`;

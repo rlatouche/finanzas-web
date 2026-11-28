@@ -2293,7 +2293,6 @@
           } catch (err) {
             mostrarAlertaReg("Error: " + err.message, "danger");
           } finally {
-            btn.disabled = false;
             btn.textContent = idEnEdicion
               ? "Confirmar Cambios"
               : "Guardar Transacción";

@@ -2475,7 +2475,7 @@
         const selCat = card.querySelector(".p-cat");
         const selSub = card.querySelector(".p-sub");
         const selDest = card.querySelector(".p-dest");
-selDest.addEventListener("change", actualizarEstadoDivisaEnSplits);
+        selDest.addEventListener("change", actualizarEstadoDivisaEnSplits);
 
         function refrescarCatsPartida() {
           const t = selTipo.value;
@@ -2621,23 +2621,27 @@ selDest.addEventListener("change", actualizarEstadoDivisaEnSplits);
               };
               if (tipo === "TRANSFERENCIA") {
                 if (!p.cuentaDestino) {
-      throw new Error("Selecciona la Cuenta Destino en todas las transferencias.");
-    }
-    if (p.monedaDestino !== cabecera.moneda) {
-      const valDivisa = parseFloat(p.montoDivisa);
-      if (isNaN(valDivisa) || valDivisa <= 0) {
-        throw new Error(
-          `Debes ingresar un Monto Divisa válido (${p.monedaDestino}) para la transferencia hacia "${p.cuentaDestino}".`
-        );
-      }
-    } else {
-      // Garantizar que vaya vacío si es la misma moneda
-      p.montoDivisa = "";
-    }
-                
+                  throw new Error(
+                    "Selecciona la Cuenta Destino en todas las transferencias.",
+                  );
+                }
+                if (p.monedaDestino !== cabecera.moneda) {
+                  const valDivisa = parseFloat(p.montoDivisa);
+                  if (isNaN(valDivisa) || valDivisa <= 0) {
+                    throw new Error(
+                      `Debes ingresar un Monto Divisa válido (${p.monedaDestino}) para la transferencia hacia "${p.cuentaDestino}".`,
+                    );
+                  }
+                } else {
+                  // Garantizar que vaya vacío si es la misma moneda
+                  p.montoDivisa = "";
+                }
+
                 if (!p.cuentaDestino) {
-      throw new Error("Selecciona la Cuenta Destino en todas las transferencias.");
-    }
+                  throw new Error(
+                    "Selecciona la Cuenta Destino en todas las transferencias.",
+                  );
+                }
                 p.monedaDestino =
                   catalogos.mapaCuentas[p.cuentaDestino] || cabecera.moneda;
                 p.montoDivisa = card.querySelector(".p-divisa").value;

@@ -2609,50 +2609,50 @@
             };
 
             const partidas = Array.from(
-  document.querySelectorAll(".partida-card"),
-).map((card) => {
-  const tipo = card.querySelector(".p-tipo").value;
-  const benEsp = card.querySelector(".p-ben").value;
-  const p = {
-    tipo,
-    beneficiario: benEsp && benEsp !== benPrincipal ? benEsp : "",
-    memo: card.querySelector(".p-memo").value.trim(),
-    monto: card.querySelector(".p-monto").value,
-  };
+              document.querySelectorAll(".partida-card"),
+            ).map((card) => {
+              const tipo = card.querySelector(".p-tipo").value;
+              const benEsp = card.querySelector(".p-ben").value;
+              const p = {
+                tipo,
+                beneficiario: benEsp && benEsp !== benPrincipal ? benEsp : "",
+                memo: card.querySelector(".p-memo").value.trim(),
+                monto: card.querySelector(".p-monto").value,
+              };
 
-  if (tipo === "TRANSFERENCIA") {
-    // 1. Primero leemos los valores del DOM
-    p.cuentaDestino = card.querySelector(".p-dest").value;
-    if (!p.cuentaDestino) {
-      throw new Error(
-        "Selecciona la Cuenta Destino en todas las transferencias.",
-      );
-    }
+              if (tipo === "TRANSFERENCIA") {
+                // 1. Primero leemos los valores del DOM
+                p.cuentaDestino = card.querySelector(".p-dest").value;
+                if (!p.cuentaDestino) {
+                  throw new Error(
+                    "Selecciona la Cuenta Destino en todas las transferencias.",
+                  );
+                }
 
-    p.monedaDestino =
-      catalogos.mapaCuentas[p.cuentaDestino] || cabecera.moneda;
-    const rawDivisa = card.querySelector(".p-divisa")?.value || "";
+                p.monedaDestino =
+                  catalogos.mapaCuentas[p.cuentaDestino] || cabecera.moneda;
+                const rawDivisa = card.querySelector(".p-divisa")?.value || "";
 
-    // 2. Luego validamos con los valores ya cargados
-    if (p.monedaDestino !== cabecera.moneda) {
-      const valDivisa = parseFloat(rawDivisa);
-      if (isNaN(valDivisa) || valDivisa <= 0) {
-        throw new Error(
-          `Debes ingresar un Monto Divisa válido (${p.monedaDestino}) para la transferencia hacia "${p.cuentaDestino}".`,
-        );
-      }
-      p.montoDivisa = rawDivisa;
-    } else {
-      // Misma moneda: garantizar que vaya vacío
-      p.montoDivisa = "";
-    }
-  } else {
-    p.categoria = card.querySelector(".p-cat").value;
-    p.subcategoria = card.querySelector(".p-sub").value;
-  }
+                // 2. Luego validamos con los valores ya cargados
+                if (p.monedaDestino !== cabecera.moneda) {
+                  const valDivisa = parseFloat(rawDivisa);
+                  if (isNaN(valDivisa) || valDivisa <= 0) {
+                    throw new Error(
+                      `Debes ingresar un Monto Divisa válido (${p.monedaDestino}) para la transferencia hacia "${p.cuentaDestino}".`,
+                    );
+                  }
+                  p.montoDivisa = rawDivisa;
+                } else {
+                  // Misma moneda: garantizar que vaya vacío
+                  p.montoDivisa = "";
+                }
+              } else {
+                p.categoria = card.querySelector(".p-cat").value;
+                p.subcategoria = card.querySelector(".p-sub").value;
+              }
 
-  return p;
-});
+              return p;
+            });
 
             const msg = await guardarMovimientoWeb({
               id: idEnEdicion || "",

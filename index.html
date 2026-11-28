@@ -2047,60 +2047,50 @@
 
       // --- VISTA 2: REGISTRAR / EDITAR ---
 
-      function actualizarEstadoDivisaEnSplits() {
-        // 1. Obtener la moneda de la cuenta principal (ej. el input readonly "COP" o desde el catálogo)
-        const monedaPrincipal = (
-          document.getElementById("splitMonedaPrincipal")?.value || // ajusta al ID real de tu input "Moneda"
-          obtenerMonedaDeCuenta(
-            document.getElementById("splitCuentaOrigen")?.value,
-          ) ||
-          "COP"
-        )
-          .trim()
-          .toUpperCase();
+function actualizarEstadoDivisaEnSplits() {
+  const cuentaOrigen = document.getElementById("cmpCuenta")?.value || "";
+  const monedaPrincipal = (
+    document.getElementById("cmpMoneda")?.value ||
+    catalogos.mapaCuentas[cuentaOrigen] ||
+    "COP"
+  ).trim().toUpperCase();
 
-        // 2. Recorrer todas las filas del asiento múltiple
-        document.querySelectorAll(".fila-split").forEach((fila) => {
-          const selTipo = fila.querySelector(".split-tipo");
-          const selCuentaDest = fila.querySelector(".split-cuenta-destino");
-          const boxDivisa = fila.querySelector(".div-monto-divisa-split");
-          const inpDivisa = fila.querySelector(".input-monto-divisa-split");
+  document.querySelectorAll(".partida-card").forEach((card) => {
+    const selTipo = card.querySelector(".p-tipo");
+    const selDest = card.querySelector(".p-dest");
+    const boxDivisa = card.querySelector(".div-monto-divisa-split");
+    const inpDivisa = card.querySelector(".p-divisa");
 
-          if (!boxDivisa || !inpDivisa) return;
+    if (!boxDivisa || !inpDivisa) return;
 
-          const esTransferencia = selTipo && selTipo.value === "Transferencia";
-          if (!esTransferencia || !selCuentaDest) {
-            boxDivisa.classList.add("d-none");
-            inpDivisa.required = false;
-            inpDivisa.value = "";
-            return;
-          }
+    const esTransferencia = selTipo && selTipo.value === "TRANSFERENCIA";
+    const cuentaDest = selDest ? selDest.value : "";
 
-          // Buscar la moneda de la cuenta destino en tu catálogo de cuentas
-          const nombreCuentaDest = selCuentaDest.value;
-          const infoCuentaDest = (catalogos?.cuentas || []).find(
-            (c) => c.nombre === nombreCuentaDest,
-          );
-          const monedaDestino = (
-            infoCuentaDest?.moneda_codigo ||
-            infoCuentaDest?.moneda ||
-            "COP"
-          )
-            .trim()
-            .toUpperCase();
+    if (!esTransferencia || !cuentaDest) {
+      boxDivisa.classList.add("d-none");
+      inpDivisa.required = false;
+      inpDivisa.value = "";
+      return;
+    }
 
-          // Regla 1 y 2: Ocultar si es igual moneda; mostrar y obligar si es distinta
-          if (monedaDestino === monedaPrincipal) {
-            boxDivisa.classList.add("d-none");
-            inpDivisa.required = false;
-            inpDivisa.value = "";
-          } else {
-            boxDivisa.classList.remove("d-none");
-            inpDivisa.required = true;
-            inpDivisa.placeholder = `Obligatorio (${monedaDestino})`;
-          }
-        });
-      }
+    const monedaDestino = (
+      catalogos.mapaCuentas[cuentaDest] ||
+      monedaPrincipal
+    ).trim().toUpperCase();
+
+    if (monedaDestino === monedaPrincipal) {
+      // Misma moneda: ocultar y limpiar
+      boxDivisa.classList.add("d-none");
+      inpDivisa.required = false;
+      inpDivisa.value = "";
+    } else {
+      // Distinta moneda: mostrar y volver obligatorio
+      boxDivisa.classList.remove("d-none");
+      inpDivisa.required = true;
+      inpDivisa.placeholder = `Obligatorio (${monedaDestino})`;
+    }
+  });
+}
       function mostrarAlertaReg(texto, tipo = "success") {
         const el = document.getElementById("alertaRegistro");
         el.className = `alert alert-${tipo}`;

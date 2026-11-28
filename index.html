@@ -434,7 +434,7 @@
                   type="text"
                   id="txMemo"
                   class="form-control"
-                  placeholder="Nota opcional..."
+                  placeholder="Nota ..."
                 />
               </div>
 
@@ -503,7 +503,7 @@
                   type="text"
                   id="trNota"
                   class="form-control"
-                  placeholder="Nota opcional..."
+                  placeholder="Nota ..."
                 />
               </div>
 
@@ -2046,6 +2046,55 @@
       }
 
       // --- VISTA 2: REGISTRAR / EDITAR ---
+
+      function actualizarEstadoDivisaEnSplits() {
+  // 1. Obtener la moneda de la cuenta principal (ej. el input readonly "COP" o desde el catálogo)
+  const monedaPrincipal = (
+    document.getElementById("splitMonedaPrincipal")?.value || // ajusta al ID real de tu input "Moneda"
+    obtenerMonedaDeCuenta(document.getElementById("splitCuentaOrigen")?.value) ||
+    "COP"
+  ).trim().toUpperCase();
+
+  // 2. Recorrer todas las filas del asiento múltiple
+  document.querySelectorAll(".fila-split").forEach((fila) => {
+    const selTipo = fila.querySelector(".split-tipo");
+    const selCuentaDest = fila.querySelector(".split-cuenta-destino");
+    const boxDivisa = fila.querySelector(".div-monto-divisa-split");
+    const inpDivisa = fila.querySelector(".input-monto-divisa-split");
+
+    if (!boxDivisa || !inpDivisa) return;
+
+    const esTransferencia = selTipo && selTipo.value === "Transferencia";
+    if (!esTransferencia || !selCuentaDest) {
+      boxDivisa.classList.add("d-none");
+      inpDivisa.required = false;
+      inpDivisa.value = "";
+      return;
+    }
+
+    // Buscar la moneda de la cuenta destino en tu catálogo de cuentas
+    const nombreCuentaDest = selCuentaDest.value;
+    const infoCuentaDest = (catalogos?.cuentas || []).find(
+      (c) => c.nombre === nombreCuentaDest
+    );
+    const monedaDestino = (
+      infoCuentaDest?.moneda_codigo ||
+      infoCuentaDest?.moneda ||
+      "COP"
+    ).trim().toUpperCase();
+
+    // Regla 1 y 2: Ocultar si es igual moneda; mostrar y obligar si es distinta
+    if (monedaDestino === monedaPrincipal) {
+      boxDivisa.classList.add("d-none");
+      inpDivisa.required = false;
+      inpDivisa.value = "";
+    } else {
+      boxDivisa.classList.remove("d-none");
+      inpDivisa.required = true;
+      inpDivisa.placeholder = `Obligatorio (${monedaDestino})`;
+    }
+  });
+}
       function mostrarAlertaReg(texto, tipo = "success") {
         const el = document.getElementById("alertaRegistro");
         el.className = `alert alert-${tipo}`;
@@ -2373,7 +2422,7 @@
                     </select>
                   </div>
                   <div class="col-md-7">
-                    <label class="form-label small fw-bold">Beneficiario (Opcional)</label>
+                    <label class="form-label small fw-bold">Beneficiario ()</label>
                     <select class="form-select form-select-sm p-ben">
                       <option value="">-- Usar Principal --</option>${optsBen}
                     </select>
@@ -2394,10 +2443,18 @@
                     <label class="form-label small fw-bold">Cuenta Destino</label>
                     <select class="form-select form-select-sm p-dest"><option value="">-- Destino --</option>${optsCuentas}</select>
                   </div>
-                  <div class="col-4">
-                    <label class="form-label small fw-bold">Monto Divisa</label>
-                    <input type="number" step="0.01" class="form-control form-control-sm p-divisa" placeholder="Opcional">
-                  </div>
+<!-- Dentro de la plantilla de la línea cuando Tipo === 'Transferencia' -->
+<div class="col-md-4 div-monto-divisa-split d-none">
+  <label class="form-label small fw-bold">
+    Monto Divisa <span class="text-danger">*</span>
+  </label>
+  <input
+    type="number"
+    step="any"
+    class="form-control input-monto-divisa-split"
+    placeholder="Obligatorio"
+  />
+</div>
                 </div>
                 <div class="row g-2">
                   <div class="col-7">
